@@ -46,16 +46,22 @@ import org.springframework.boot.configurationmetadata.ConfigurationMetadataPrope
 import org.springframework.boot.loader.archive.Archive;
 import org.springframework.boot.loader.archive.ExplodedArchive;
 import org.springframework.boot.loader.archive.JarFileArchive;
-import org.springframework.cloud.dataflow.configuration.metadata.ApplicationConfigurationMetadataResolver;
+import org.springframework.cloud.dataflow.configuration.metadata.BootApplicationConfigurationMetadataResolver;
+import org.springframework.cloud.dataflow.configuration.metadata.BootClassLoaderFactory;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * A maven plugin that will scan an asciidoc file for special comment markers and replace everything
+ * in between with a listing of whitelisted configuration properties for a Spring Cloud Stream/Task app.
+ *
+ * @author Eric Bottard
+ * @see <a href="http://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting Properties</a>
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
-	private ClassLoaderExposingMetadataResolver metadataResolver = new ClassLoaderExposingMetadataResolver();
+	private BootApplicationConfigurationMetadataResolver metadataResolver = new BootApplicationConfigurationMetadataResolver();
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
@@ -89,7 +95,8 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 			}
 
 			ScatteredArchive archive = new ScatteredArchive(mavenProject);
-			ClassLoader classLoader = metadataResolver.createClassLoader(archive);
+			BootClassLoaderFactory bootClassLoaderFactory = new BootClassLoaderFactory(archive, null);
+			ClassLoader classLoader = bootClassLoaderFactory.createClassLoader();
 			debug(classLoader);
 
 
@@ -219,18 +226,6 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		int lastDollar = type.lastIndexOf('$');
 		boolean hasGenerics = type.contains("<");
 		return hasGenerics ? type : type.substring(Math.max(lastDot, lastDollar) + 1);
-	}
-
-	private static class ClassLoaderExposingMetadataResolver extends ApplicationConfigurationMetadataResolver {
-
-		/*
-		 * widens visibility
-		 */
-		@Override
-		public ClassLoader createClassLoader(Archive archive) throws Exception {
-			return super.createClassLoader(archive);
-		}
-
 	}
 
 	/**
