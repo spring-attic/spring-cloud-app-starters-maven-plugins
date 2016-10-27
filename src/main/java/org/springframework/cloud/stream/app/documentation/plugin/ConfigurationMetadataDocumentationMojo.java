@@ -81,7 +81,7 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		}
 
 		File tmp = new File(readme.getPath() + ".tmp");
-		try (PrintWriter out = new PrintWriter(tmp); BufferedReader reader = new BufferedReader(new FileReader(readme));) {
+		try (PrintWriter out = new PrintWriter(tmp); BufferedReader reader = new BufferedReader(new FileReader(readme))) {
 
 			String line = null;
 			do {
@@ -254,7 +254,10 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
 		@Override
 		public Collection<Entry> getEntries() {
-			throw new UnsupportedOperationException();
+			// This is just to satisfy BootClassLoaderFactory boot13/14 layout detection.
+			// The important part is to return a list of (fake) nested
+			// Archives that represent each dependency of the Maven project
+			return Collections.emptyList();
 		}
 
 		@Override
