@@ -27,9 +27,9 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.jar.Manifest;
 
@@ -233,7 +233,7 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 	 * "sees" all the properties that this Mojo tries to document.
 	 * @author Eric Bottard
 	 */
-	private static class ScatteredArchive extends Archive {
+	private static class ScatteredArchive implements Archive {
 
 		private final MavenProject mavenProject;
 
@@ -253,14 +253,6 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		}
 
 		@Override
-		public Collection<Entry> getEntries() {
-			// This is just to satisfy BootClassLoaderFactory boot13/14 layout detection.
-			// The important part is to return a list of (fake) nested
-			// Archives that represent each dependency of the Maven project
-			return Collections.emptyList();
-		}
-
-		@Override
 		public List<Archive> getNestedArchives(EntryFilter ignored) throws IOException {
 			try {
 				List<Archive> archives = new ArrayList<>(mavenProject.getRuntimeClasspathElements().size());
@@ -277,8 +269,10 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		}
 
 		@Override
-		public Archive getFilteredArchive(EntryRenameFilter filter) throws IOException {
-			throw new UnsupportedOperationException();
+		public Iterator<Entry> iterator() {
+			// BootClassLoaderFactory.createClassLoader (which uses this iterator call) is not actually
+			// used here. Returning the simples thing that works.
+			return Collections.emptyIterator();
 		}
 	}
 }
