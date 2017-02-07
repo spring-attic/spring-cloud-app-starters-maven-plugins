@@ -1,0 +1,58 @@
+= Spring Cloud Stream & Task Maven Metadata Plugin
+
+Maven plugin for aggregating Spring Boot metadata from all dependencies of a project into
+a single metadata-only artifact.
+
+== Usage
+
+To use this plugin, configure this plugin for your app project (either directly or through a parent POM):
+```
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
+				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
+				<version>1.0.0.BUILD-SNAPSHOT</version>
+				<executions>
+					<execution>
+						<id>aggregate-metadata</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>aggregate-metadata</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+```
+
+This will produce and attach to the build a jar file named `<artifactId>-<version>-metadata.jar` (`metadata` being the
+maven classifier used for the artifact, which can be customized as such:)
+```
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
+				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
+				<version>1.0.0.BUILD-SNAPSHOT</version>
+				<executions>
+					<execution>
+						<id>aggregate-metadata</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>aggregate-metadata</goal>
+						</goals>
+						<configuration>
+						    <classifier>foobar</classifier>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+```
+
+
+
+
