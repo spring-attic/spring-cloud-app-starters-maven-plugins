@@ -1,0 +1,67 @@
+= spring-cloud-stream-app-maven-plugin
+Maven plugin for generating spring cloud stream applications from the spring-cloud-stream-app-starters repository
+
+*Build*
+
+mvn clean package [Requires JDK 8]
+
+*Sample Configuration for generating spring cloud stream apps*
+
+Full configuration for Spring Cloud Stream Apps can be found here:
+https://github.com/spring-cloud/spring-cloud-stream-app-starters/blob/master/spring-cloud-stream-app-generator/pom.xml
+
+and for Spring Cloud Task Apps it is at:
+
+https://github.com/spring-cloud/spring-cloud-task-app-starters/blob/master/spring-cloud-task-app-generator/pom.xml
+
+[source, xml]
+----
+    <plugin>
+        <groupId>org.springframework.cloud.stream.app.plugin</groupId>
+        <artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
+        <version>1.0.0.BUILD-SNAPSHOT</version>
+            <configuration>
+                <generatedProjectHome>/tmp</generatedProjectHome>
+                <generatedProjectVersion>${project.version}</generatedProjectVersion>
+                <applicationType>stream</applicationType>
+                <bom>
+                    <name>scs-bom</name>
+                    <groupId>org.springframework.cloud.stream.app</groupId>
+                    <artifactId>spring-cloud-stream-app-dependencies</artifactId>
+                    <version>${project.version}</version>
+                </bom>
+
+                <binders>
+                    <kafka />
+                    <rabbit />
+                </binders>
+                <generatedApps>
+                <time-source />
+                    <transform-processor />
+                    <trigger-source />
+                    <file-sink />
+                </generatedApps>
+            </configuration>
+    </plugin>
+----
+
+Binders are only applicable for spring cloud stream apps. They are not required for spring cloud task apps.
+
+Application type must be *stream* and *task* for stream and task apps respectively.
+
+The bom for stream apps is specified in spring-cloud-stream-app-dependencies
+(group id: org.springframework.cloud.stream.app)
+
+and for tasks it is spring-cloud-task-app-dependencies
+(group id: org.springframework.cloud.task.app).
+
+Extra dependency management can be added as additional boms to the plugin using the property
+-DbomsWithHigherPrecedence and value based on the pattern groupId:artfiactId:version. This can
+ be a comma separated collection of boms. Any bom added like this will get priority in the order
+ they are specified over any default values used in the plugin configuration.
+
+ Spring Boot version used in the generated app can be overridden using the plugin property
+ -DbootVersion=<spring boot version>.
+
+
+
