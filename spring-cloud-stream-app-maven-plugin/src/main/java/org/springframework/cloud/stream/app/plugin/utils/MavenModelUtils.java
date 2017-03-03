@@ -24,6 +24,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
+import org.apache.maven.model.RepositoryPolicy;
 import org.apache.maven.model.Scm;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
@@ -242,6 +243,27 @@ public class MavenModelUtils {
         pomModel.getBuild().addPlugin(getSourcePlugin());
 
         pomModel.getProperties().setProperty("skipTests", "true");
+    }
+
+    public static void addPluginRepositories(Model pomModel) throws IOException {
+        RepositoryPolicy repositoryPolicy1 = new RepositoryPolicy();
+        repositoryPolicy1.setEnabled(true);
+        org.apache.maven.model.Repository pluginRepo1 = new org.apache.maven.model.Repository();
+        pluginRepo1.setId("spring-snapshots");
+        pluginRepo1.setName("Spring Snapshots");
+        pluginRepo1.setUrl("http://repo.spring.io/libs-snapshot-local");
+        pluginRepo1.setSnapshots(repositoryPolicy1);
+
+        RepositoryPolicy repositoryPolicy2 = new RepositoryPolicy();
+        repositoryPolicy2.setEnabled(false);
+        org.apache.maven.model.Repository pluginRepo2 = new org.apache.maven.model.Repository();
+        pluginRepo2.setId("spring-milestones");
+        pluginRepo2.setName("Spring Milestones");
+        pluginRepo2.setSnapshots(repositoryPolicy2);
+        pluginRepo2.setUrl("http://repo.spring.io/libs-milestone-local");
+
+        pomModel.getPluginRepositories().add(pluginRepo1);
+        pomModel.getPluginRepositories().add(pluginRepo2);
     }
 
     public static void addBomsWithHigherPrecedence(Model pomModel, String bomsWithHigherPrecedence) throws IOException {

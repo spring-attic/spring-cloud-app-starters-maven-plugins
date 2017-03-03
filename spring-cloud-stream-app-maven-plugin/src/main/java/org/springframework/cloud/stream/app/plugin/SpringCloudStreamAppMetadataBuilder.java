@@ -97,9 +97,7 @@ public class SpringCloudStreamAppMetadataBuilder {
     }
 
     SpringCloudStreamAppMetadataBuilder addRepositories(List<Repository> repositories) throws MalformedURLException {
-
         for (Repository repository : repositories) {
-
             io.spring.initializr.metadata.Repository repo = new io.spring.initializr.metadata.Repository();
             repo.setName(repository.getName());
             repo.setUrl(new URL(repository.getUrl()));

@@ -63,6 +63,7 @@ public class ScsProjectGenerator extends ProjectGenerator {
                 pomModel.getBuild().addPlugin(plugin);
             }
             MavenModelUtils.addExtraPlugins(pomModel);
+            MavenModelUtils.addPluginRepositories(pomModel);
             MavenModelUtils.addBomsWithHigherPrecedence(pomModel, bomsWithHigherPrecedence);
             if (!CollectionUtils.isEmpty(additionalBoms)) {
                 MavenModelUtils.addAdditionalBoms(pomModel, additionalBoms);
