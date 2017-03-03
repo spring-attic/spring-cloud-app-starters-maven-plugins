@@ -24,6 +24,7 @@ import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.model.Profile;
+import org.apache.maven.model.Repository;
 import org.apache.maven.model.RepositoryPolicy;
 import org.apache.maven.model.Scm;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
@@ -262,8 +263,13 @@ public class MavenModelUtils {
         pluginRepo2.setSnapshots(repositoryPolicy2);
         pluginRepo2.setUrl("http://repo.spring.io/libs-milestone-local");
 
-        pomModel.getPluginRepositories().add(pluginRepo1);
-        pomModel.getPluginRepositories().add(pluginRepo2);
+        List<Repository> pluginRepositories = pomModel.getPluginRepositories();
+        if (!pluginRepositories.contains(pluginRepo1)){
+            pluginRepositories.add(pluginRepo1);
+        }
+        if (!pluginRepositories.contains(pluginRepo2)) {
+            pluginRepositories.add(pluginRepo2);
+        }
     }
 
     public static void addBomsWithHigherPrecedence(Model pomModel, String bomsWithHigherPrecedence) throws IOException {
