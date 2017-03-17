@@ -8,7 +8,7 @@
 		<relativePath />
 	</parent>	
 	<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
-    <version>1.0.0.BUILD-SNAPSHOT</version>
+    <version>1.0.0.RC1</version>
 	<packaging>maven-plugin</packaging>
 
 	<properties>
