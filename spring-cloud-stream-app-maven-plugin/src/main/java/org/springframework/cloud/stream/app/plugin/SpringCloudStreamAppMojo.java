@@ -284,13 +284,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				orderedStarterArtifactTokens.addAll(Stream.of(tokens)
 						.limit(tokens.length - 1)
 						.collect(toList()));
-				String applicationName = orderedStarterArtifactTokens.stream().collect(Collectors.joining("-"));
 
 				final File applicationProperties = new File(generatedAppHome, "src/main/resources/application.properties");
 
-				String applicationPropertiesContents = "management.context-path=" + "/management\n" +
-						"security.basic.path=" + "/management/**\n" +
-						"info.app.name=" + "@project.artifactId@" + "\n" +
+				String applicationPropertiesContents = "info.app.name=" + "@project.artifactId@" + "\n" +
 						"info.app.description=" + "@project.description@" + "\n" +
 						"info.app.version=" + "@project.version@" + "\n";
 
