@@ -28,6 +28,8 @@ public class GeneratableApp {
     String autoConfigClass;
 
     List<Dependency> forceDependencies = new ArrayList<>();
+    private String starterGroupId;
+    private String starterArtifactId;
 
     public String getAutoConfigClass() {
         return autoConfigClass;
@@ -117,5 +119,21 @@ public class GeneratableApp {
 
     public void setNoAppSpecificTestSupportArtifact(boolean noAppSpecificTestSupportArtifact) {
         this.noAppSpecificTestSupportArtifact = noAppSpecificTestSupportArtifact;
+    }
+
+    public String getStarterGroupId() {
+        return starterGroupId;
+    }
+
+    public void setStarterGroupId(String starterGroupId) {
+        this.starterGroupId = starterGroupId;
+    }
+
+    public String getStarterArtifactId() {
+        return starterArtifactId;
+    }
+
+    public void setStarterArtifactId(String starterArtifactId) {
+        this.starterArtifactId = starterArtifactId;
     }
 }

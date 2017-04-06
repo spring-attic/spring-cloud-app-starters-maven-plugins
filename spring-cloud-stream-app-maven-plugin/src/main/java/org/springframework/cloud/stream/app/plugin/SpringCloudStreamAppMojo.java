@@ -87,7 +87,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private String generatedProjectVersion;
 
 	@Parameter
-	private String applicationType;
+	private String applicationType = "generic";
 
 	@Parameter
 	private List<Repository> extraRepositories;
@@ -118,7 +118,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		if (project != null) {
 			@SuppressWarnings("unchecked")
 			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();
-
 			Optional<MavenProject> dependencies = collectedProjects.stream()
 					.filter(e -> e.getArtifactId().endsWith("dependencies")).findFirst();
 			MavenProject mavenProject = dependencies.get();
@@ -153,13 +152,13 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 							 Map.Entry<String, GeneratableApp> entry, String appType) throws IOException, XmlPullParserException {
 
 		GeneratableApp value = entry.getValue();
-		final String generatedAppGroupId = getApplicationGroupId(applicationType);
+		final String generatedAppGroupId = getApplicationGroupId(applicationType, value);
 
 		List<Dependency> deps = new ArrayList<>();
 		List<String> artifactIds = new ArrayList<>();
 
 		String appArtifactId = !appType.equals("default") ? entry.getKey() + "-" + appType : entry.getKey();
-		String starterArtifactId = getStarterArtifactId(entry.getKey());
+		String starterArtifactId = getStarterArtifactId(entry.getKey(), value);
 		Dependency starterDep = getDependency(starterArtifactId, generatedAppGroupId);
 		deps.add(starterDep);
 		artifactIds.add(starterArtifactId);
@@ -247,8 +246,8 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				.addBootVersion(bootVersion)
 				.addDependencyGroup(appArtifactId, depArray).build();
 		initializrDelegate.applyMetadata(metadata);
-		ProjectRequest projectRequest = initializrDelegate.getProjectRequest(appArtifactId, getApplicationGroupId(applicationType),
-				getDescription(appArtifactId), getPackageName(appArtifactId),
+		ProjectRequest projectRequest = initializrDelegate.getProjectRequest(appArtifactId, getApplicationGroupId(applicationType, value),
+				getDescription(appArtifactId), getPackageName(appArtifactId, value),
 				generatedProjectVersion, artifactNames);
 		File project = projectGenerator.doGenerateProjectStructure(projectRequest);
 
@@ -276,7 +275,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 											 File generatedProjectHome, String origKey, String generatedProjectVersion) throws IOException, XmlPullParserException {
 		if (generatedProjectHome != null && project != null) {
 			String generatedAppHome = moveProjectWithMavenModelsUpdated(appArtifactId, project, generatedProjectHome,
-					value.isTestsIgnored(), generatedProjectVersion);
+					value.isTestsIgnored(), generatedProjectVersion, value);
 
 			try {
 				String[] tokens = appArtifactId.split("-");
@@ -343,7 +342,12 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		});
 	}
 
-	private String getStarterArtifactId(String key) {
+	private String getStarterArtifactId(String key, GeneratableApp app) {
+
+		String starterArtifactId = app.getStarterArtifactId();
+		if (StringUtils.isNotEmpty(starterArtifactId)) {
+			return starterArtifactId;
+		}
 		//time-source -> source-time
 		//groovy-filter-processor -> processor-groovy-filter
 		//scriptable-transform-processor -> processor-scriptable-transform
@@ -361,11 +365,16 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		return String.format("%s-%s-%s", "spring-cloud-starter", applicationType, collect);
 	}
 
-	private static String getApplicationGroupId(String applicationType) {
+	private static String getApplicationGroupId(String applicationType, GeneratableApp app) {
+		String starterGroupId = app.getStarterGroupId();
+		if (StringUtils.isNotEmpty(starterGroupId)) {
+			return starterGroupId;
+		}
+
 		return String.format("%s.%s.%s", "org.springframework.cloud", applicationType, "app");
 	}
 
-	private String getPackageName(String artifactId) {
+	private String getPackageName(String artifactId, GeneratableApp app) {
 		String[] strings = applicationType.equals("stream") ? Stream.of(artifactId.split("-"))
 				.toArray(String[]::new) :
 				Stream.of(artifactId.split("-"))
@@ -377,12 +386,12 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			Object[] versionDropped = Stream.of(strings).limit(strings.length - 1)
 					.toArray();
 			String join = StringUtils.join(versionDropped, ".");
-			return String.format("%s.%s", getApplicationGroupId(applicationType), join);
+			return String.format("%s.%s", getApplicationGroupId(applicationType, app), join);
 		}
 
 
 		String join = StringUtils.join(strings, ".");
-		return String.format("%s.%s", getApplicationGroupId(applicationType), join);
+		return String.format("%s.%s", getApplicationGroupId(applicationType, app), join);
 	}
 
 	private String getDescription(String artifactId) {
@@ -413,11 +422,11 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	private String moveProjectWithMavenModelsUpdated(String key, File project,
 													 File generatedProjectHome, boolean testIgnored,
-													 String generatedProjectVersion) throws IOException, XmlPullParserException {
+													 String generatedProjectVersion, GeneratableApp app) throws IOException, XmlPullParserException {
 
 		Model model = isNewDir(generatedProjectHome) ? MavenModelUtils.populateModel(generatedProjectHome.getName(),
-				getApplicationGroupId(applicationType), generatedProjectVersion)
-				: MavenModelUtils.getModelFromContainerPom(generatedProjectHome, getApplicationGroupId(applicationType), generatedProjectVersion);
+				getApplicationGroupId(applicationType, app), generatedProjectVersion)
+				: MavenModelUtils.getModelFromContainerPom(generatedProjectHome, getApplicationGroupId(applicationType, app), generatedProjectVersion);
 
 		if (model != null && MavenModelUtils.addModuleIntoModel(model, key)) {
 			MavenModelUtils.writeModelToFile(model, new FileOutputStream(new File(generatedProjectHome, "pom.xml")));
