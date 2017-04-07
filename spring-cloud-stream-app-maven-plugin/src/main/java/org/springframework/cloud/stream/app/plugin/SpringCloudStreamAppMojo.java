@@ -276,26 +276,17 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		if (generatedProjectHome != null && project != null) {
 			String generatedAppHome = moveProjectWithMavenModelsUpdated(appArtifactId, project, generatedProjectHome,
 					value.isTestsIgnored(), generatedProjectVersion, value);
-
 			try {
-				String[] tokens = appArtifactId.split("-");
-				List<String> orderedStarterArtifactTokens = new LinkedList<>();
-				orderedStarterArtifactTokens.addAll(Stream.of(tokens)
-						.limit(tokens.length - 1)
-						.collect(toList()));
-
 				final File applicationProperties = new File(generatedAppHome, "src/main/resources/application.properties");
-
-				String applicationPropertiesContents = "info.app.name=" + "@project.artifactId@" + "\n" +
+				String applicationPropertiesContents = "spring.application.name=${vcap.application.name:" + origKey + "}\n" +
+						"info.app.name=" + "@project.artifactId@" + "\n" +
 						"info.app.description=" + "@project.description@" + "\n" +
 						"info.app.version=" + "@project.version@" + "\n";
-
 				Files.write(applicationProperties.toPath(), applicationPropertiesContents.getBytes());
 			}
 			catch (IOException e) {
 				throw new IllegalStateException(e);
 			}
-
 			if (StringUtils.isNotEmpty(value.getExtraTestConfigClass())) {
 				String s = StringUtils.removeAndHump(appArtifactId, "-");
 				String s1 = StringUtils.capitalizeFirstLetter(s);
