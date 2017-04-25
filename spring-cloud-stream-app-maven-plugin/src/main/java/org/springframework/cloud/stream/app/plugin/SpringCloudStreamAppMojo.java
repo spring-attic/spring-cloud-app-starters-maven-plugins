@@ -90,6 +90,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private String applicationType = "generic";
 
 	@Parameter
+	private String dockerHubOrg;
+
+	@Parameter
 	private List<Repository> extraRepositories;
 
 	@Parameter
@@ -110,8 +113,12 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
-
-		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
+		if (StringUtils.isEmpty(dockerHubOrg)) {
+			projectGenerator.setDockerHubOrg("springcloud" + applicationType);
+		}
+		else {
+			projectGenerator.setDockerHubOrg(dockerHubOrg);
+		}
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
