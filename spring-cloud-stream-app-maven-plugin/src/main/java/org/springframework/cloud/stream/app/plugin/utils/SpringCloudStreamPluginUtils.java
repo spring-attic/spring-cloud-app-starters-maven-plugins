@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 /**
  * @author Soby Chacko
@@ -137,5 +138,16 @@ public class SpringCloudStreamPluginUtils {
             Files.write(f1.toPath(), sb.toString().getBytes());
         }
 
+    }
+
+    public static Xpp3Dom addElement(Xpp3Dom parentElement, String elementName) {
+        return addElement(parentElement, elementName, null);
+    }
+
+    public static Xpp3Dom addElement(Xpp3Dom parentElement, String elementName, String elementValue) {
+        Xpp3Dom child = new Xpp3Dom(elementName);
+        child.setValue(elementValue);
+        parentElement.addChild(child);
+        return child;
     }
 }

@@ -7,14 +7,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.Optional;
 import java.util.Properties;
 
 import io.spring.initializr.generator.ProjectGenerator;
 import io.spring.initializr.generator.ProjectRequest;
+import io.spring.initializr.metadata.Dependency;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 import org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils;
+import org.springframework.cloud.stream.app.plugin.utils.SpringCloudStreamPluginUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -34,6 +38,8 @@ public class ScsProjectGenerator extends ProjectGenerator {
     private Properties properties;
 
     private List<Plugin> additionalPlugins;
+
+    private List<Dependency> requiresUnpack;
 
     @Override
     protected File doGenerateProjectStructure(ProjectRequest request) {
@@ -64,6 +70,31 @@ public class ScsProjectGenerator extends ProjectGenerator {
             }
             MavenModelUtils.addExtraPlugins(pomModel);
             MavenModelUtils.addPluginRepositories(pomModel);
+
+            if(!CollectionUtils.isEmpty(requiresUnpack)) {
+                Optional<Plugin> springBootPlugin = pomModel.getBuild().getPlugins().stream()
+                        .filter(plugin -> plugin.getArtifactId().equals("spring-boot-maven-plugin"))
+                        .findFirst();
+                if (springBootPlugin.isPresent()) {
+                    Plugin plugin = springBootPlugin.get();
+                    pomModel.getBuild().removePlugin(plugin);
+
+                    final Xpp3Dom xpp3Dom = new Xpp3Dom("configuration");
+                    Xpp3Dom xpp3Dom1 = SpringCloudStreamPluginUtils.addElement(xpp3Dom, "requiresUnpack");
+                    for (Dependency dependency : requiresUnpack) {
+                        Xpp3Dom xpp3Dom2 = SpringCloudStreamPluginUtils.addElement(xpp3Dom1, "dependency");
+                        Xpp3Dom xpp3Dom3 = new Xpp3Dom("groupId");
+                        xpp3Dom3.setValue(dependency.getGroupId());
+                        Xpp3Dom xpp3Dom4 = new Xpp3Dom("artifactId");
+                        xpp3Dom4.setValue(dependency.getArtifactId());
+                        xpp3Dom2.addChild(xpp3Dom3);
+                        xpp3Dom2.addChild(xpp3Dom4);
+                    }
+                    plugin.setConfiguration(xpp3Dom);
+                    pomModel.getBuild().addPlugin(plugin);
+                }
+            }
+
             MavenModelUtils.addBomsWithHigherPrecedence(pomModel, bomsWithHigherPrecedence);
             if (!CollectionUtils.isEmpty(additionalBoms)) {
                 MavenModelUtils.addAdditionalBoms(pomModel, additionalBoms);
@@ -109,5 +140,9 @@ public class ScsProjectGenerator extends ProjectGenerator {
 
     public void setAdditionalPlugins(List<Plugin> additionalPlugins) {
         this.additionalPlugins = additionalPlugins;
+    }
+
+    public void setRequiresUnpack(List<Dependency> requiresUnpack) {
+        this.requiresUnpack = requiresUnpack;
     }
 }

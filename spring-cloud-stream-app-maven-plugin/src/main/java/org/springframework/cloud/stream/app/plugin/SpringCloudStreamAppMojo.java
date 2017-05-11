@@ -110,6 +110,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	@Parameter
 	List<Plugin> additionalPlugins = new ArrayList<>();
 
+	@Parameter
+	private List<Dependency> requiresUnpack = new ArrayList<>();
+
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -122,6 +125,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
+		projectGenerator.setRequiresUnpack(requiresUnpack);
 		if (project != null) {
 			@SuppressWarnings("unchecked")
 			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();

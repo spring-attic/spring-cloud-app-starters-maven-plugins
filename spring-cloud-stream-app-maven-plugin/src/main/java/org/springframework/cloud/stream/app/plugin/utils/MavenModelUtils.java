@@ -201,21 +201,21 @@ public class MavenModelUtils {
 
         final Xpp3Dom mavenPluginConfiguration = new Xpp3Dom("configuration");
 
-        final Xpp3Dom images = addElement(mavenPluginConfiguration, "images");
+        final Xpp3Dom images = SpringCloudStreamPluginUtils.addElement(mavenPluginConfiguration, "images");
 
-        final Xpp3Dom image = addElement(images, "image");
+        final Xpp3Dom image = SpringCloudStreamPluginUtils.addElement(images, "image");
         if (!version.endsWith("BUILD-SNAPSHOT")) {
-            addElement(image, "name", dockerHubOrg + "/${project.artifactId}:" + version);
+            SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}:" + version);
         }
         else {
-            addElement(image, "name", dockerHubOrg + "/${project.artifactId}");
+            SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}");
         }
 
-        final Xpp3Dom build = addElement(image, "build");
-        addElement(build, "from", "anapsix/alpine-java:8");
+        final Xpp3Dom build = SpringCloudStreamPluginUtils.addElement(image, "build");
+        SpringCloudStreamPluginUtils.addElement(build, "from", "anapsix/alpine-java:8");
 
-        final Xpp3Dom volumes = addElement(build, "volumes");
-        addElement(volumes, "volume", "/tmp");
+        final Xpp3Dom volumes = SpringCloudStreamPluginUtils.addElement(build, "volumes");
+        SpringCloudStreamPluginUtils.addElement(volumes, "volume", "/tmp");
 
         final Xpp3Dom entryPoint = new Xpp3Dom("entryPoint");
         build.addChild(entryPoint);
@@ -223,12 +223,12 @@ public class MavenModelUtils {
         final Xpp3Dom exec = new Xpp3Dom("exec");
         entryPoint.addChild(exec);
 
-        addElement(exec, "arg", "java");
-        addElement(exec, "arg", "-jar");
-        addElement(exec, "arg", "/maven/" + artifactId + ".jar");
+        SpringCloudStreamPluginUtils.addElement(exec, "arg", "java");
+        SpringCloudStreamPluginUtils.addElement(exec, "arg", "-jar");
+        SpringCloudStreamPluginUtils.addElement(exec, "arg", "/maven/" + artifactId + ".jar");
 
-        final Xpp3Dom assembly = addElement(build, "assembly");
-        addElement(assembly, "descriptor", "assembly.xml");
+        final Xpp3Dom assembly = SpringCloudStreamPluginUtils.addElement(build, "assembly");
+        SpringCloudStreamPluginUtils.addElement(assembly, "descriptor", "assembly.xml");
 
         dockerPlugin.setConfiguration(mavenPluginConfiguration);
 
@@ -467,17 +467,6 @@ public class MavenModelUtils {
         sourcePlugin.setExecutions(pluginExecutions);
 
         return sourcePlugin;
-    }
-
-    private static Xpp3Dom addElement(Xpp3Dom parentElement, String elementName) {
-        return addElement(parentElement, elementName, null);
-    }
-
-    private static Xpp3Dom addElement(Xpp3Dom parentElement, String elementName, String elementValue) {
-        Xpp3Dom child = new Xpp3Dom(elementName);
-        child.setValue(elementValue);
-        parentElement.addChild(child);
-        return child;
     }
 
 }
