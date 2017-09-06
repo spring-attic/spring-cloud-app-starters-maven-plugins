@@ -15,22 +15,11 @@
 
 package org.springframework.cloud.stream.app.documentation.plugin;
 
-
-import java.io.BufferedReader;
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.jar.Manifest;
 
 import org.apache.maven.artifact.Artifact;
@@ -52,11 +41,14 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * A maven plugin that will scan an asciidoc file for special comment markers and replace everything
- * in between with a listing of whitelisted configuration properties for a Spring Cloud Stream/Task app.
+ * A maven plugin that will scan an asciidoc file for special comment markers and replace
+ * everything in between with a listing of whitelisted configuration properties for a
+ * Spring Cloud Stream/Task app.
  *
  * @author Eric Bottard
- * @see <a href="http://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting Properties</a>
+ * @see <a href=
+ * "http://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting
+ * Properties</a>
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
@@ -65,6 +57,9 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
+
+	@Parameter(defaultValue = "false")
+	private boolean failOnMissingDescription;
 
 	public void execute() throws MojoExecutionException {
 
@@ -76,12 +71,14 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
 		Artifact artifact = mavenProject.getArtifact();
 		if (artifact.getFile() == null) {
-			getLog().info(String.format("Project in %s does not produce a build artifact, skipping", mavenProject.getBasedir()));
+			getLog().info(String.format("Project in %s does not produce a build artifact, skipping",
+					mavenProject.getBasedir()));
 			return;
 		}
 
 		File tmp = new File(readme.getPath() + ".tmp");
-		try (PrintWriter out = new PrintWriter(tmp); BufferedReader reader = new BufferedReader(new FileReader(readme))) {
+		try (PrintWriter out = new PrintWriter(tmp);
+				BufferedReader reader = new BufferedReader(new FileReader(readme))) {
 
 			String line = null;
 			do {
@@ -96,40 +93,37 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
 			ScatteredArchive archive = new ScatteredArchive(mavenProject);
 			BootClassLoaderFactory bootClassLoaderFactory = new BootClassLoaderFactory(archive, null);
-			ClassLoader classLoader = bootClassLoaderFactory.createClassLoader();
-			debug(classLoader);
+			try (URLClassLoader classLoader = bootClassLoaderFactory.createClassLoader()) {
+				debug(classLoader);
 
+				List<ConfigurationMetadataProperty> properties = metadataResolver.listProperties(archive, false);
+				Collections.sort(properties, new Comparator<ConfigurationMetadataProperty>() {
 
-			List<ConfigurationMetadataProperty> properties = metadataResolver.listProperties(archive, false);
-			Collections.sort(properties, new Comparator<ConfigurationMetadataProperty>() {
+					@Override
+					public int compare(ConfigurationMetadataProperty p1, ConfigurationMetadataProperty p2) {
+						return p1.getId().compareTo(p2.getId());
+					}
+				});
 
-				@Override
-				public int compare(ConfigurationMetadataProperty p1, ConfigurationMetadataProperty p2) {
-					return p1.getId().compareTo(p2.getId());
+				for (ConfigurationMetadataProperty property : properties) {
+					getLog().debug("Documenting " + property.getId());
+					out.println(asciidocFor(property, classLoader));
 				}
-			});
 
-			for (ConfigurationMetadataProperty property : properties) {
-				getLog().debug("Documenting " + property.getId());
-				out.println(asciidocFor(property, classLoader));
-			}
+				do {
+					line = reader.readLine();
+					// drop lines
+				}
+				while (!line.startsWith("//end::configuration-properties[]"));
 
-			do {
-				line = reader.readLine();
-				// drop lines
+				// Copy remaining lines, including //end::configuration-properties[]
+				while (line != null) {
+					out.println(line);
+					line = reader.readLine();
+				}
+				getLog().info(String.format("Documented %d configuration properties", properties.size()));
+				tmp.renameTo(readme);
 			}
-			while (!line.startsWith("//end::configuration-properties[]"));
-
-			// Copy remaining lines, including //end::configuration-properties[]
-			while (line != null) {
-				out.println(line);
-				line = reader.readLine();
-			}
-			if (classLoader instanceof Closeable) {
-				((Closeable) classLoader).close();
-			}
-			getLog().info(String.format("Documented %d configuration properties", properties.size()));
-			tmp.renameTo(readme);
 		}
 		catch (Exception e) {
 			throw new MojoExecutionException("Error generating documentation", e);
@@ -157,7 +151,15 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 	}
 
 	private String niceDescription(ConfigurationMetadataProperty property) {
-		return property.getDescription() == null ? "<documentation missing>" : property.getDescription();
+		if (property.getDescription() == null) {
+			if (failOnMissingDescription) {
+				throw new RuntimeException("Missing description for property " + property.getId());
+			}
+			else {
+				return "<documentation missing>";
+			}
+		}
+		return property.getDescription();
 	}
 
 	private CharSequence maybeHints(ConfigurationMetadataProperty property, ClassLoader classLoader) {
@@ -165,7 +167,8 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		if (ClassUtils.isPresent(type, classLoader)) {
 			Class<?> clazz = ClassUtils.resolveClassName(type, classLoader);
 			if (clazz.isEnum()) {
-				return ", possible values: `" + StringUtils.arrayToDelimitedString(clazz.getEnumConstants(), "`,`") + "`";
+				return ", possible values: `" + StringUtils.arrayToDelimitedString(clazz.getEnumConstants(), "`,`")
+						+ "`";
 			}
 		}
 		return "";
@@ -222,15 +225,70 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 		if (type == null) {
 			return "<unknown>";
 		}
+		return niceType(type);
+	}
+
+	String niceType(String type) {
+		List<String> parts = new ArrayList<>();
+		int openBrackets = 0;
+		int lastGenericPart = 0;
+		for (int i = 0; i < type.length(); i++) {
+			switch (type.charAt(i)) {
+			case '<':
+				if (openBrackets++ == 0) {
+					parts.add(type.substring(0, i));
+					lastGenericPart = i + 1;
+				}
+				break;
+			case '>':
+				if (--openBrackets == 0) {
+					parts.add(type.substring(lastGenericPart, i));
+				}
+				;
+				break;
+			case ',':
+				if (openBrackets == 1) {
+					parts.add(type.substring(lastGenericPart, i));
+					lastGenericPart = i + 1;
+				}
+				break;
+			case ' ':
+				if (openBrackets == 1) {
+					lastGenericPart++;
+				}
+				break;
+			}
+		}
+		if (parts.isEmpty()) {
+			return unqualify(type); // simple type
+		}
+		else { // type with generics
+			StringBuilder sb = new StringBuilder(unqualify(parts.get(0)));
+			for (int i = 1; i < parts.size(); i++) {
+				if (i == 1) {
+					sb.append('<');
+				}
+				sb.append(unqualify(niceType(parts.get(i))));
+				if (i == parts.size() - 1) {
+					sb.append('>');
+				}
+				else {
+					sb.append(", ");
+				}
+			}
+			return sb.toString();
+		}
+	}
+
+	private String unqualify(String type) {
 		int lastDot = type.lastIndexOf('.');
 		int lastDollar = type.lastIndexOf('$');
-		boolean hasGenerics = type.contains("<");
-		return hasGenerics ? type : type.substring(Math.max(lastDot, lastDollar) + 1);
+		return type.substring(Math.max(lastDot, lastDollar) + 1, type.length());
 	}
 
 	/**
-	 * An adapter to boot {@link Archive} that satisfies just enough of the API to craft a ClassLoader that
-	 * "sees" all the properties that this Mojo tries to document.
+	 * An adapter to boot {@link Archive} that satisfies just enough of the API to craft a
+	 * ClassLoader that "sees" all the properties that this Mojo tries to document.
 	 * @author Eric Bottard
 	 */
 	private static class ScatteredArchive implements Archive {
@@ -270,7 +328,8 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
 		@Override
 		public Iterator<Entry> iterator() {
-			// BootClassLoaderFactory.createClassLoader (which uses this iterator call) is not actually
+			// BootClassLoaderFactory.createClassLoader (which uses this iterator call) is not
+			// actually
 			// used here. Returning the simples thing that works.
 			return Collections.emptyIterator();
 		}
