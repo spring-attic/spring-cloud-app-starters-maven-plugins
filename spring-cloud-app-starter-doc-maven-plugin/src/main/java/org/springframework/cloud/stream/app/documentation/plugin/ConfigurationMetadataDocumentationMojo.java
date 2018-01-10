@@ -23,6 +23,8 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -131,14 +133,18 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 					line = reader.readLine();
 				}
 				getLog().info(String.format("Documented %d configuration properties", properties.size()));
-				tmp.renameTo(readme);
 			}
 		}
 		catch (Exception e) {
+			tmp.delete();
 			throw new MojoExecutionException("Error generating documentation", e);
 		}
-		finally {
-			tmp.delete();
+
+		try {
+			Files.move(tmp.toPath(), readme.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		}
+		catch (IOException e) {
+			throw new MojoExecutionException("Error moving tmp file to README.adoc", e);
 		}
 
 	}
@@ -172,7 +178,12 @@ public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 	}
 
 	private CharSequence maybeHints(ConfigurationMetadataProperty property, ClassLoader classLoader) {
-		String type = property.getType().replace('$', '.');
+		String type = property.getType();
+		if (type == null) {
+			return "";
+		}
+
+		type = type.replace('$', '.');
 		if (ClassUtils.isPresent(type, classLoader)) {
 			Class<?> clazz = ClassUtils.resolveClassName(type, classLoader);
 			if (clazz.isEnum()) {
