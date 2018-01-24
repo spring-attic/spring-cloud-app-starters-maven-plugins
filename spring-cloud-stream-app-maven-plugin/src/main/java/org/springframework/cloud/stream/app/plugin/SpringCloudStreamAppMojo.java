@@ -16,24 +16,6 @@
 
 package org.springframework.cloud.stream.app.plugin;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import io.spring.initializr.generator.ProjectRequest;
 import io.spring.initializr.metadata.Dependency;
 import io.spring.initializr.metadata.InitializrMetadata;
@@ -48,12 +30,21 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
-
 import org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils;
 import org.springframework.cloud.stream.app.plugin.utils.SpringCloudStreamPluginUtils;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.CollectionUtils;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -180,7 +171,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			artifactIds.add(binderArtifactId);
 		}
 		if (StringUtils.isNotEmpty(value.getExtraTestConfigClass())) {
-			deps.add(getDependency("app-starters-test-support", generatedAppGroupId));
+			deps.add(getDependencyWithScope("app-starters-test-support", generatedAppGroupId, "test"));
 			artifactIds.add("app-starters-test-support");
 
 			if (!value.isNoAppSpecificTestSupportArtifact()) {
@@ -189,7 +180,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						.limit(tokens.length - 1)
 						.collect(Collectors.joining("-"));
 
-				deps.add(getDependency(starterType + "-" + "app-starters-test-support", generatedAppGroupId));
+				deps.add(getDependencyWithScope(starterType + "-" + "app-starters-test-support", generatedAppGroupId, "test"));
 				artifactIds.add(starterType + "-" + "app-starters-test-support");
 			}
 		}
@@ -412,6 +403,16 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		dependency.setGroupId(groupId);
 		dependency.setArtifactId(s);
 		dependency.setBom(bom.getName());
+		return dependency;
+	}
+
+	private Dependency getDependencyWithScope(String s, String groupId, String scope) {
+		Dependency dependency = new Dependency();
+		dependency.setId(s);
+		dependency.setGroupId(groupId);
+		dependency.setArtifactId(s);
+		dependency.setBom(bom.getName());
+		dependency.setScope(scope);
 		return dependency;
 	}
 
