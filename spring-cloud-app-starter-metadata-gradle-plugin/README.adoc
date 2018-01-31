@@ -1,0 +1,16 @@
+= Spring Cloud Stream & Task Gradle Metadata Plugin
+
+Gradle plugin for aggregating Spring Boot metadata from all dependencies of a project into
+a single metadata-only artifact.
+
+== Usage
+
+To use this plugin, configure this plugin for your app project:
+```
+apply plugin: 'org.springframework.cloud.stream.app.documentation.aggregate-metadata'
+```
+
+This will add task `metadataJar` that produces and attaches to the build a jar file named `<artifactId>-<version>-metadata.jar` (`metadata` being the
+maven classifier used for the artifact.) +
+Of cause, you can customize the  `metadataJar` task which is regular gradle `jar` type task.
+

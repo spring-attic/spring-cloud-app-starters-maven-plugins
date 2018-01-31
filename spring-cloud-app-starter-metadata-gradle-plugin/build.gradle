@@ -1,0 +1,29 @@
+plugins {
+    id "java-gradle-plugin"
+}
+repositories {
+    mavenCentral()
+    maven { url "http://repo.spring.io/plugins-release/" }
+}
+
+
+
+gradlePlugin {
+    plugins {
+        springMD {
+            id = "org.springframework.cloud.stream.app.documentation.aggregate-metadata"
+            implementationClass = "org.springframework.cloud.stream.app.documentation.plugin.SpringMetadataPlugin"
+        }
+    }
+}
+
+
+
+dependencies {
+    compile "org.springframework.boot:spring-boot-configuration-processor:1.5.9.RELEASE"
+}
+
+
+
+
+
