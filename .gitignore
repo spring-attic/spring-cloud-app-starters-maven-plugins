@@ -23,3 +23,4 @@ spring-xd-samples/*/xd
 dump.rdb
 coverage-error.log
 .apt_generated
+/spring-cloud-app-starter-metadata-gradle-plugin/.gradle/

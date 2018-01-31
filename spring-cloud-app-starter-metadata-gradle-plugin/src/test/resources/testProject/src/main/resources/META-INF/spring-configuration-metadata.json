@@ -1,0 +1,12 @@
+{
+
+  "properties": [
+    {
+      "name": "my.custom",
+      "type": "java.lang.String",
+      "description": "Custom test description"
+
+    }
+  ]
+
+}
