@@ -21,6 +21,8 @@ gradlePlugin {
 
 dependencies {
     compile "org.springframework.boot:spring-boot-configuration-processor:1.5.9.RELEASE"
+    testCompile "junit:junit:4.12"
+
 }
 
 

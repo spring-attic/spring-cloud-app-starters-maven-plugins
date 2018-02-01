@@ -20,7 +20,7 @@ public class SpringMetadataPlugin implements Plugin<Project> {
             p.getArtifacts().add("archives",metadataTask);
 
             if(p.getPlugins().hasPlugin(JavaPlugin.class)){
-                metadataTask.dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME);
+                metadataTask.dependsOn(JavaPlugin.COMPILE_JAVA_TASK_NAME,JavaPlugin.PROCESS_RESOURCES_TASK_NAME);
             }
         });
     }
