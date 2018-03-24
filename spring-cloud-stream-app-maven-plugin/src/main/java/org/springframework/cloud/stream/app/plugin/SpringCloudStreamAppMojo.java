@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils.ENTRYPOINT_TYPE_EXEC;
+import static org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils.ENTRYPOINT_TYPE_SHELL;
 
 /**
  * @author Soby Chacko
@@ -84,6 +86,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private String dockerHubOrg;
 
 	@Parameter
+	private String entrypointType = ENTRYPOINT_TYPE_EXEC;
+
+	@Parameter
 	private List<Repository> extraRepositories;
 
 	@Parameter
@@ -113,6 +118,16 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		else {
 			projectGenerator.setDockerHubOrg(dockerHubOrg);
 		}
+
+		if (!entrypointType.equals(ENTRYPOINT_TYPE_EXEC)
+				&& !entrypointType.equals(ENTRYPOINT_TYPE_SHELL)) {
+			throw new MojoFailureException(
+					String.format(
+							"Your entrypointType: %s is wrong, only 'exec' or 'shell' supported", entrypointType));
+		}
+		getLog().info("Generating apps with entrypointType: " + entrypointType);
+
+		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
@@ -251,7 +266,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		ProjectRequest projectRequest = initializrDelegate.getProjectRequest(appArtifactId, getApplicationGroupId(applicationType, value),
 				getDescription(appArtifactId), getPackageName(appArtifactId, value),
 				generatedProjectVersion, artifactNames);
-		File project = projectGenerator.doGenerateProjectStructure(projectRequest);
+		File project = projectGenerator.doGenerateProjectStructure(projectRequest, this.entrypointType);
 
 		File generatedProjectHome = StringUtils.isNotEmpty(this.generatedProjectHome) ?
 				new File(this.generatedProjectHome) :
