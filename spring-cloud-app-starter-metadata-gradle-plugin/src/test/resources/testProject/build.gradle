@@ -1,0 +1,21 @@
+plugins{
+    id 'java'
+    id  'org.springframework.cloud.stream.app.documentation.aggregate-metadata'
+
+}
+
+repositories {
+    mavenCentral()
+    maven { url "http://repo.spring.io/plugins-release/" }
+}
+dependencies{
+    compile "org.springframework.boot:spring-boot:1.5.9.RELEASE"
+}
+
+
+
+
+
+
+
+
