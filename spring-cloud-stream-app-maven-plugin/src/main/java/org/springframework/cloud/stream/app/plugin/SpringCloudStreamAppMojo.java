@@ -298,7 +298,8 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				String applicationPropertiesContents = "spring.application.name=${vcap.application.name:" + origKey + "}\n" +
 						"info.app.name=" + "@project.artifactId@" + "\n" +
 						"info.app.description=" + "@project.description@" + "\n" +
-						"info.app.version=" + "@project.version@" + "\n";
+						"info.app.version=" + "@project.version@" + "\n" +
+						"management.endpoints.web.exposure.include=bindings" + "\n";
 				Files.write(applicationProperties.toPath(), applicationPropertiesContents.getBytes());
 			}
 			catch (IOException e) {

@@ -404,7 +404,7 @@ public class MavenModelUtils {
         final Plugin surefirePlugin = new Plugin();
         surefirePlugin.setGroupId("org.apache.maven.plugins");
         surefirePlugin.setArtifactId("maven-surefire-plugin");
-        surefirePlugin.setVersion("2.19.1");
+        surefirePlugin.setVersion("2.21.0");
         final Xpp3Dom mavenPluginConfiguration = new Xpp3Dom("configuration");
         final Xpp3Dom skipTests = new Xpp3Dom("skipTests");
         skipTests.setValue("${skipTests}");
