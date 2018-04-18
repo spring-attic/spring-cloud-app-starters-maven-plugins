@@ -204,7 +204,7 @@ public class MavenModelUtils {
 
         if (ENTRYPOINT_TYPE_SHELL.equalsIgnoreCase(entrypointStyle)) {
             final Xpp3Dom shell = new Xpp3Dom(ENTRYPOINT_TYPE_SHELL);
-            shell.setValue("java $JAVA_OPTS -jar /maven/" + artifactId + ".jar ${*}");
+            shell.setValue("java $JAVA_OPTS -jar /maven/" + artifactId + ".jar");
             entryPoint.addChild(shell);
         } else {
             final Xpp3Dom exec = new Xpp3Dom(ENTRYPOINT_TYPE_EXEC);
