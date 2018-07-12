@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015-2016 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.springframework.cloud.stream.app.plugin.utils;
 
 import org.apache.maven.model.*;
@@ -6,6 +22,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.springframework.cloud.stream.app.plugin.Bom;
+import org.springframework.cloud.stream.app.plugin.CopyResource;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
@@ -18,6 +35,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 /**
  * @author Soby Chacko
  * @author Gunnar Hillert
+ * @author Christian Tzolov
  */
 public class MavenModelUtils {
     public static final String ENTRYPOINT_TYPE_SHELL = "shell";
@@ -412,6 +430,51 @@ public class MavenModelUtils {
 
         surefirePlugin.setConfiguration(mavenPluginConfiguration);
         return surefirePlugin;
+    }
+
+    public static Plugin getMavenDependencyPlugin(List<CopyResource> copyResources) {
+        final Plugin mavenDependencyPlugin = new Plugin();
+        mavenDependencyPlugin.setGroupId("org.apache.maven.plugins");
+        mavenDependencyPlugin.setArtifactId("maven-dependency-plugin");
+        // mavenDependencyPlugin.setVersion("3.3.1");
+
+        PluginExecution pluginExecution = new PluginExecution();
+        List<String> goals = new ArrayList<>();
+        goals.add("unpack");
+        pluginExecution.setGoals(goals);
+
+
+        final Xpp3Dom pluginExecutionConfiguration = new Xpp3Dom("configuration");
+
+        final Xpp3Dom artifactItems = new Xpp3Dom("artifactItems");
+
+		for (CopyResource copyResource: copyResources) {
+
+			final Xpp3Dom artifactItem = new Xpp3Dom("artifactItem");
+
+            artifactItem.addChild(xpp3DomWithValue("groupId", copyResource.getGroupId()));
+            artifactItem.addChild(xpp3DomWithValue("artifactId", copyResource.getArtifactId()));
+            artifactItem.addChild(xpp3DomWithValue("version", copyResource.getVersion()));
+            artifactItem.addChild(xpp3DomWithValue("includes", copyResource.getIncludes()));
+
+			artifactItems.addChild(artifactItem);
+		}
+
+        pluginExecutionConfiguration.addChild(artifactItems);
+
+        final Xpp3Dom outputDirectory = new Xpp3Dom("outputDirectory");
+        outputDirectory.setValue("${project.build.directory}/classes/");
+        pluginExecutionConfiguration.addChild(outputDirectory);
+
+        pluginExecution.setConfiguration(pluginExecutionConfiguration);
+        mavenDependencyPlugin.getExecutions().add(pluginExecution);
+        return mavenDependencyPlugin;
+    }
+
+    private static Xpp3Dom xpp3DomWithValue(String elementName, String value) {
+        final Xpp3Dom element = new Xpp3Dom(elementName);
+        element.setValue(value);
+        return element;
     }
 
     private static Plugin getJavadocPlugin() {
