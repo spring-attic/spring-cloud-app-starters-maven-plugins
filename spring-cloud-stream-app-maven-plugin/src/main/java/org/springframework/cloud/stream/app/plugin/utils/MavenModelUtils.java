@@ -6,6 +6,7 @@ import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.springframework.cloud.stream.app.plugin.Bom;
+import org.springframework.cloud.stream.app.plugin.CopyResource;
 import org.springframework.util.StringUtils;
 
 import java.io.*;
@@ -412,6 +413,51 @@ public class MavenModelUtils {
 
         surefirePlugin.setConfiguration(mavenPluginConfiguration);
         return surefirePlugin;
+    }
+
+    public static Plugin getMavenDependencyPlugin(List<CopyResource> copyResources) {
+        final Plugin mavenDependencyPlugin = new Plugin();
+        mavenDependencyPlugin.setGroupId("org.apache.maven.plugins");
+        mavenDependencyPlugin.setArtifactId("maven-dependency-plugin");
+        // mavenDependencyPlugin.setVersion("3.3.1");
+
+        PluginExecution pluginExecution = new PluginExecution();
+        List<String> goals = new ArrayList<>();
+        goals.add("unpack");
+        pluginExecution.setGoals(goals);
+
+
+        final Xpp3Dom pluginExecutionConfiguration = new Xpp3Dom("configuration");
+
+        final Xpp3Dom artifactItems = new Xpp3Dom("artifactItems");
+
+		for (CopyResource copyResource: copyResources) {
+
+			final Xpp3Dom artifactItem = new Xpp3Dom("artifactItem");
+
+            artifactItem.addChild(xpp3DomWithValue("groupId", copyResource.getGroupId()));
+            artifactItem.addChild(xpp3DomWithValue("artifactId", copyResource.getArtifactId()));
+            artifactItem.addChild(xpp3DomWithValue("version", copyResource.getVersion()));
+            artifactItem.addChild(xpp3DomWithValue("includes", copyResource.getIncludes()));
+
+			artifactItems.addChild(artifactItem);
+		}
+
+        pluginExecutionConfiguration.addChild(artifactItems);
+
+        final Xpp3Dom outputDirectory = new Xpp3Dom("outputDirectory");
+        outputDirectory.setValue("${project.build.directory}/classes/");
+        pluginExecutionConfiguration.addChild(outputDirectory);
+
+        pluginExecution.setConfiguration(pluginExecutionConfiguration);
+        mavenDependencyPlugin.getExecutions().add(pluginExecution);
+        return mavenDependencyPlugin;
+    }
+
+    private static Xpp3Dom xpp3DomWithValue(String elementName, String value) {
+        final Xpp3Dom element = new Xpp3Dom(elementName);
+        element.setValue(value);
+        return element;
     }
 
     private static Plugin getJavadocPlugin() {
