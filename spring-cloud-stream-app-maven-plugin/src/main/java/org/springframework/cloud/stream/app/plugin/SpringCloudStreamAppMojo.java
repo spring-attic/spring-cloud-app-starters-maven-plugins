@@ -65,6 +65,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private Map<String, GeneratableApp> generatedApps;
 
 	@Parameter
+	private List<CopyResource> copyResources;
+
+	@Parameter
 	private Bom bom;
 
 	@Parameter
@@ -112,6 +115,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
+		if (!CollectionUtils.isEmpty(copyResources)) {
+			this.additionalPlugins.add(MavenModelUtils.getMavenDependencyPlugin(this.copyResources));
+		}
+
 		if (StringUtils.isEmpty(dockerHubOrg)) {
 			projectGenerator.setDockerHubOrg("springcloud" + applicationType);
 		}
