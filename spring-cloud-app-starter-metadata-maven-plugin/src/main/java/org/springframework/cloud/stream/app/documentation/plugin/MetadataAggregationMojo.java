@@ -39,12 +39,14 @@ import org.apache.maven.project.MavenProjectHelper;
 
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
 import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
+import org.springframework.util.CollectionUtils;
 
 /**
  * A maven plugin that will gather all Spring Boot metadata files from all transitive dependencies and will aggregate
  * them in one metadata-only artifact.
  *
  * @author Eric Bottard
+ * @author David Turanski
  */
 @Mojo(
 	name = "aggregate-metadata",
@@ -55,6 +57,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 	static final String METADATA_PATH = "META-INF/spring-configuration-metadata.json";
 	static final String WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
+	public static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
@@ -110,8 +113,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					File localWhiteList = new File(file, WHITELIST_PATH);
 					if (localWhiteList.canRead()) {
 						try (InputStream is = new FileInputStream(localWhiteList)) {
-							getLog().debug("Merging whitelist from " + path);
-							whiteList.load(is);
+							getLog().debug("!!!! Merging whitelist from " + path);
+							whiteList = merge(whiteList, is);
 						}
 					}
 				}
@@ -129,7 +132,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						if (entry != null) {
 							try (InputStream inputStream = zipFile.getInputStream(entry)) {
 								getLog().debug("Merging whitelist from " + path);
-								whiteList.load(inputStream);
+								whiteList = merge(whiteList, inputStream);
 							}
 						}
 					}
@@ -140,6 +143,28 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
 		return new Result(metadata, whiteList);
+	}
+
+	private Properties merge(Properties whitelist, InputStream is) throws IOException {
+		Properties temp = new Properties();
+		temp.load(is);
+
+		if (!temp.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+			getLog().warn("Whitelist properties missing required key " + CONFIGURATION_PROPERTIES_CLASSES);
+			return whitelist;
+		}
+
+		getLog().debug("Adding ConfigurationProperties " + temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES));
+
+		if (!CollectionUtils.isEmpty(whitelist)) {
+			String value = whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES);
+			if (!value.contains(temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES))) {
+				value = value + "," + temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES);
+				temp.put(CONFIGURATION_PROPERTIES_CLASSES, value);
+			}
+		}
+
+		return temp;
 	}
 
 	/**
