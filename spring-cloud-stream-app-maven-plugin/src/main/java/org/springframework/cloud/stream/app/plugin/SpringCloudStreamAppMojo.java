@@ -16,6 +16,24 @@
 
 package org.springframework.cloud.stream.app.plugin;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import io.spring.initializr.generator.ProjectRequest;
 import io.spring.initializr.metadata.Dependency;
 import io.spring.initializr.metadata.InitializrMetadata;
@@ -30,21 +48,12 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.StringUtils;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+
 import org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils;
 import org.springframework.cloud.stream.app.plugin.utils.SpringCloudStreamPluginUtils;
 import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.util.CollectionUtils;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils.ENTRYPOINT_TYPE_EXEC;
@@ -53,6 +62,7 @@ import static org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils.
 /**
  * @author Soby Chacko
  * @author Christian Tzolov
+ * @author Glenn Renfro
  */
 @Mojo(name = "generate-app")
 public class SpringCloudStreamAppMojo extends AbstractMojo {
@@ -109,6 +119,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	@Parameter
 	List<Plugin> additionalPlugins = new ArrayList<>();
+
+	@Parameter
+	List<String> additionalAppProperties;
 
 	@Parameter
 	private List<Dependency> requiresUnpack = new ArrayList<>();
@@ -309,6 +322,11 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						"info.app.version=" + "@project.version@" + "\n" +
 						"management.endpoints.web.exposure.include=health,info,bindings" + "\n" +
 						"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration" + "\n";
+				if(this.additionalAppProperties != null && !this.additionalAppProperties.isEmpty()){
+					for(String property : this.additionalAppProperties) {
+						applicationPropertiesContents = applicationPropertiesContents.concat(String.format("%s\n", property));
+					}
+				}
 				Files.write(applicationProperties.toPath(), applicationPropertiesContents.getBytes());
 			}
 			catch (IOException e) {

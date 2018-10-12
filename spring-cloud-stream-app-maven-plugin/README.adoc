@@ -65,7 +65,7 @@ Extra dependency management can be added as additional boms to the plugin using 
 
 
 ==== Copy Third-Party Resources
-The `copyResources` configuration bock permits coping Resources from third-party jar dependencies into the
+The `copyResources` configuration block permits copying Resources from third-party jar dependencies into the
 generated App Starter classpath.
 
 Form example if you want to copy a truststore and a self-signed certificate (`clientKeyStore.jks`, `cacerts`)  bundled inside the
@@ -124,4 +124,27 @@ Later will add the following `maven-dependency-plugin` definition to the generat
       </plugin>
 ----
 
-This will ensure that the clientKeyStore.jks,cacerts files will be pied to the AppStarter's `BOOT-INF/classes/`
+This will ensure that the clientKeyStore.jks,cacerts files will be copied to the AppStarter's `BOOT-INF/classes/`
+
+==== Insert additional properties into the application.properties file for the created app.
+The `additionalAppProperties` configuration block permits adding of additional properties to the application.properties file.
+[source, xml]
+----
+<plugin>
+    <groupId>org.springframework.cloud.stream.app.plugin</groupId>
+    <artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
+    <configuration>
+        <generatedProjectHome>${session.executionRootDirectory}/apps</generatedProjectHome>
+        <generatedProjectVersion>${project.version}</generatedProjectVersion>
+        <bom>....</bom>
+        <generatedApps>
+            <coap-server-source/>
+        </generatedApps>
+        <additionalAppProperties>
+            <additionalAppProperty>spring.cloud.task.closecontextEnabled=true</additionalAppProperty>
+        </additionalAppProperties>
+    </configuration>
+    </configuration>
+</plugin>
+----
+In the example above we added the`spring.cloud.task.closecontextEnabled` property to the application.properties of the created app.

@@ -16,17 +16,22 @@
 
 package org.springframework.cloud.stream.app.plugin;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import org.apache.maven.model.DependencyManagement;
@@ -41,45 +46,51 @@ import org.junit.Test;
 
 import org.springframework.util.ReflectionUtils;
 
+import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 
 /**
  * @author Soby Chacko
+ * @author Glenn Renfro
  */
 public class SpringCloudStreamAppMojoTest {
+
+    private static final String projectHome = "./target/apps";
 
     private SpringCloudStreamAppMojo springCloudStreamAppMojo = new SpringCloudStreamAppMojo();
 
     private Class<? extends SpringCloudStreamAppMojo> mojoClazz = springCloudStreamAppMojo.getClass();
 
+    private Set<String> appPropertyValues;
+
     @Before
     public void setup() throws Exception {
 
-        Field applicationType = mojoClazz.getDeclaredField("applicationType");
+        Field applicationType = this.mojoClazz.getDeclaredField("applicationType");
         applicationType.setAccessible(true);
-        ReflectionUtils.setField(applicationType, springCloudStreamAppMojo, "stream");
+        ReflectionUtils.setField(applicationType, this.springCloudStreamAppMojo, "stream");
 
-        Field bootVersion = mojoClazz.getDeclaredField("bootVersion");
+        Field bootVersion = this.mojoClazz.getDeclaredField("bootVersion");
         bootVersion.setAccessible(true);
-        ReflectionUtils.setField(bootVersion, springCloudStreamAppMojo, "1.3.5.RELEASE");
+        ReflectionUtils.setField(bootVersion, this.springCloudStreamAppMojo, "1.3.5.RELEASE");
 
         Field generatedProjectVersion = mojoClazz.getDeclaredField("generatedProjectVersion");
         generatedProjectVersion.setAccessible(true);
-        ReflectionUtils.setField(generatedProjectVersion, springCloudStreamAppMojo, "1.0.0.BUILD-SNAPSHOT");
+        ReflectionUtils.setField(generatedProjectVersion, this.springCloudStreamAppMojo, "1.0.0.BUILD-SNAPSHOT");
 
-        Field binders = mojoClazz.getDeclaredField("binders");
+        Field binders = this.mojoClazz.getDeclaredField("binders");
         binders.setAccessible(true);
         Map<String, String> binders1 = new HashMap<>();
         binders1.put("kafka", null);
-        ReflectionUtils.setField(binders, springCloudStreamAppMojo, binders1);
+        ReflectionUtils.setField(binders, this.springCloudStreamAppMojo, binders1);
 
         Field generatedApps = mojoClazz.getDeclaredField("generatedApps");
         generatedApps.setAccessible(true);
         Map<String, GeneratableApp> generatableApps = new HashMap<>();
         generatableApps.put("foo-source", new GeneratableApp());
-        ReflectionUtils.setField(generatedApps, springCloudStreamAppMojo, generatableApps);
+        ReflectionUtils.setField(generatedApps, this.springCloudStreamAppMojo, generatableApps);
 
         Bom bom = new Bom();
         bom.setArtifactId("spring-cloud-stream-app-dependencies");
@@ -89,7 +100,16 @@ public class SpringCloudStreamAppMojoTest {
 
         Field bomField = mojoClazz.getDeclaredField("bom");
         bomField.setAccessible(true);
-        ReflectionUtils.setField(bomField, springCloudStreamAppMojo, bom);
+        ReflectionUtils.setField(bomField, this.springCloudStreamAppMojo, bom);
+
+        this.appPropertyValues = new HashSet<>(6);
+        this.appPropertyValues.add("spring.application.name=${vcap.application.name:foo-source}");
+        this.appPropertyValues.add("info.app.name=@project.artifactId@");
+        this.appPropertyValues.add("info.app.description=@project.description@");
+        this.appPropertyValues.add("info.app.version=@project.version@");
+        this.appPropertyValues.add("management.endpoints.web.exposure.include=health,info,bindings");
+        this.appPropertyValues.add("spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration");
+
     }
 
     @Test
@@ -97,13 +117,12 @@ public class SpringCloudStreamAppMojoTest {
     public void testDefaultProjectCreationByPlugin() throws Exception {
         String tmpdir = System.getProperty("java.io.tmpdir");
 
-        springCloudStreamAppMojo.execute();
+        this.springCloudStreamAppMojo.execute();
 
         Stream<Path> pathStream =
                 Files.find(Paths.get(tmpdir), 3, (path, attr) -> String.valueOf(path).contains("foo-source-kafka"));
 
         Path path = pathStream.findFirst().get();
-        System.out.println(path);
         assertNotNull(path);
 
         assertGeneratedPomXml(path);
@@ -111,22 +130,65 @@ public class SpringCloudStreamAppMojoTest {
 
     @Test
     public void testProjectCreatedIntoGeneratedProjectHome() throws Exception {
-        String projectHome = "./target/apps";
         Field generatedProjectHome = mojoClazz.getDeclaredField("generatedProjectHome");
         generatedProjectHome.setAccessible(true);
-        ReflectionUtils.setField(generatedProjectHome, springCloudStreamAppMojo, projectHome);
+        ReflectionUtils.setField(generatedProjectHome, this.springCloudStreamAppMojo, this.projectHome);
 
-        springCloudStreamAppMojo.execute();
+        this.springCloudStreamAppMojo.execute();
 
         Stream<Path> pathStream =
-                Files.find(Paths.get(projectHome), 3, (path, attr) -> String.valueOf(path).contains("foo-source-kafka"));
+                Files.find(Paths.get(this.projectHome), 3, (path, attr) -> String.valueOf(path).contains("foo-source-kafka"));
 
         Path path = pathStream.findFirst().get();
-        System.out.println(path);
         assertNotNull(path);
 
         assertGeneratedPomXml(path);
 
+    }
+
+    @Test
+    public void testAppPropertiesNoAppProp() throws Exception {
+        this.springCloudStreamAppMojo.execute();
+        validateApplicationProperties(6);
+    }
+
+    @Test
+    public void testAppPropertiesWithAppProp() throws Exception {
+
+        final String ENTRY_ONE = "hello=world";
+        final String ENTRY_TWO = "foo=bar";
+        Field generatedProjectHome = this.mojoClazz.getDeclaredField("generatedProjectHome");
+        generatedProjectHome.setAccessible(true);
+        ReflectionUtils.setField(generatedProjectHome, this.springCloudStreamAppMojo, this.projectHome);
+        Field appPropertiesField = this.mojoClazz.getDeclaredField("additionalAppProperties");
+        appPropertiesField.setAccessible(true);
+        List<String> appProperties = new ArrayList<>();
+        appProperties.add(ENTRY_ONE);
+        appProperties.add(ENTRY_TWO);
+        ReflectionUtils.setField(appPropertiesField, this.springCloudStreamAppMojo, appProperties);
+
+        this.springCloudStreamAppMojo.execute();
+
+        this.appPropertyValues.add(ENTRY_ONE);
+        this.appPropertyValues.add(ENTRY_TWO);
+        validateApplicationProperties(8);
+    }
+
+    private void validateApplicationProperties(int expectedCount) throws Exception{
+        Stream<Path> pathStream =
+                Files.find(Paths.get(this.projectHome), 3, (path, attr) -> String.valueOf(path).contains("foo-source-kafka"));
+
+        Path path = pathStream.findFirst().get();
+        File appPropsFile = new File(path.toFile(), "/src/main/resources/application.properties");
+
+        BufferedReader br = new BufferedReader(new FileReader(appPropsFile));
+        int propCount = 0 ;
+        while (br.ready()) {
+            assertThat(this.appPropertyValues.contains(br.readLine()), is(true));
+            propCount++;
+        }
+        assertThat(propCount, equalTo(expectedCount));
+        br.close();
     }
 
     private void assertGeneratedPomXml(Path path) throws Exception {
