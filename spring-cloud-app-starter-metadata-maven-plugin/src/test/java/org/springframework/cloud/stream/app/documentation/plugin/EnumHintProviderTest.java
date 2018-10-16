@@ -39,7 +39,7 @@ public class EnumHintProviderTest {
 		ConfigurationMetadata configurationMetadata = jsonMarshaller.read(new ClassPathResource("META-INF/spring"
 			+ "-configuration-metadata.json").getInputStream());
 
-		new MetadataAggregationMojo().addEnumHints(configurationMetadata);
+		new MetadataAggregationMojo().addEnumHints(configurationMetadata, this.getClass().getClassLoader());
 
 		assertThat(configurationMetadata.getHints()).hasSize(1);
 
