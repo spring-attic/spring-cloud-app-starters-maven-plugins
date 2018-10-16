@@ -22,6 +22,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
@@ -38,8 +45,16 @@ import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
+import org.springframework.boot.configurationprocessor.metadata.ItemHint;
+import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
 import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
+
+
+import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+
+import static org.springframework.boot.configurationprocessor.metadata.ItemHint.ValueHint;
+import static org.springframework.boot.configurationprocessor.metadata.ItemHint.ValueProvider;
 
 /**
  * A maven plugin that will gather all Spring Boot metadata files from all transitive dependencies and will aggregate
@@ -107,6 +122,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						try (InputStream is = new FileInputStream(localMetadata)) {
 							ConfigurationMetadata depMetadata = jsonMarshaller.read(is);
 							getLog().debug("Merging metadata from " + path);
+							addEnumHints(depMetadata, getClassLoader(path));
 							metadata.merge(depMetadata);
 						}
 					}
@@ -125,6 +141,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							try (InputStream inputStream = zipFile.getInputStream(entry)) {
 								ConfigurationMetadata depMetadata = jsonMarshaller.read(inputStream);
 								getLog().debug("Merging metadata from " + path);
+								addEnumHints(depMetadata, getClassLoader(path));
 								metadata.merge(depMetadata);
 							}
 						}
@@ -187,6 +204,67 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		catch (IOException e) {
 			throw new MojoExecutionException("Error writing to file", e);
 		}
+	}
+
+
+	void addEnumHints(ConfigurationMetadata configurationMetadata, ClassLoader classLoader) {
+
+		Map<String, List<ValueProvider>> providers = new HashMap<>();
+
+		Map<String, ItemHint> itemHints = new HashMap<>();
+
+		for (ItemMetadata property : configurationMetadata.getItems()) {
+
+			if (property.isOfItemType(ItemMetadata.ItemType.PROPERTY)) {
+
+				if (ClassUtils.isPresent(property.getType(), classLoader)) {
+					Class<?> clazz = ClassUtils.resolveClassName(property.getType(), classLoader);
+					if (clazz.isEnum()) {
+						List<ValueHint> valueHints = new ArrayList<>();
+						for (Object o : clazz.getEnumConstants()) {
+							valueHints.add(new ValueHint(o, null));
+						}
+
+						if (!providers.containsKey(property.getType())) {
+							providers.put(property.getType(), new ArrayList<ValueProvider>());
+						}
+
+						//Equals is not correct for ValueProvider
+
+						boolean found = false;
+						for (ValueProvider valueProvider: providers.get(property.getType())) {
+							if (valueProvider.getName().equals(property.getType())) {
+								found = true;
+							}
+						}
+
+						if (!found) {
+							providers.get(property.getType()).add(new ValueProvider(property.getType(), null));
+						}
+
+						itemHints.put(property.getType(), new ItemHint(property.getName(), valueHints,
+							new ArrayList<>(providers.get(property.getType()))));
+
+					}
+				}
+			}
+		}
+		if (!CollectionUtils.isEmpty(itemHints)) {
+			for (ItemHint itemHint : itemHints.values())
+				configurationMetadata.add(itemHint);
+		}
+	}
+
+	private ClassLoader getClassLoader(String jarPath) {
+		ClassLoader classLoader = null;
+		try {
+			classLoader = new URLClassLoader(new URL[]{new URL("file://" + jarPath)},
+				this.getClass().getClassLoader());
+		}
+		catch (MalformedURLException e) {
+
+		};
+		return classLoader;
 	}
 
 }
