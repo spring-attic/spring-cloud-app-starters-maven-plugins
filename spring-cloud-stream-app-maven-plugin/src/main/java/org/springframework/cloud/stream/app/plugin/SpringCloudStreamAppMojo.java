@@ -69,6 +69,18 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	private static final String SPRING_CLOUD_STREAM_BINDER_GROUP_ID = "org.springframework.cloud";
 
+	private static final String SPRING_APPLICATION_NAME = "spring.application.name";
+
+	private static final String INFO_APP_NAME = "info.app.name";
+
+	private static final String INFO_APP_DESCRIPTION = "info.app.description";
+
+	private static final String INFO_APP_VERSION = "info.app.version";
+
+	private static final String MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE = "management.endpoints.web.exposure.include";
+
+	private static final String SPRING_AUTOCONFIGURE_EXCLUDE = "spring.autoconfigure.exclude";
+
 	@Parameter(defaultValue="${project}", readonly=true, required=true)
 	private MavenProject project;
 
@@ -316,15 +328,20 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 					value.isTestsIgnored(), generatedProjectVersion, value);
 			try {
 				final File applicationProperties = new File(generatedAppHome, "src/main/resources/application.properties");
-				String applicationPropertiesContents = "spring.application.name=${vcap.application.name:" + origKey + "}\n" +
-						"info.app.name=" + "@project.artifactId@" + "\n" +
-						"info.app.description=" + "@project.description@" + "\n" +
-						"info.app.version=" + "@project.version@" + "\n" +
-						"management.endpoints.web.exposure.include=health,info,bindings" + "\n" +
-						"spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration" + "\n";
+				String applicationPropertiesContents = SPRING_APPLICATION_NAME + "=${vcap.application.name:" + origKey + "}\n" +
+						INFO_APP_NAME + "=@project.artifactId@" + "\n" +
+						INFO_APP_DESCRIPTION + "=@project.description@" + "\n" +
+						INFO_APP_VERSION + "=@project.version@" + "\n" +
+						MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + "=health,info,bindings" + "\n" +
+						SPRING_AUTOCONFIGURE_EXCLUDE + "=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration" + "\n";
 				if(this.additionalAppProperties != null && !this.additionalAppProperties.isEmpty()){
 					for(String property : this.additionalAppProperties) {
-						applicationPropertiesContents = applicationPropertiesContents.concat(String.format("%s\n", property));
+						if(!isStarterProperty(property)) {
+							applicationPropertiesContents = applicationPropertiesContents.concat(String.format("%s\n", property));
+						}
+						else {
+							getLog().warn(String.format("%s will not be overridden. Starter default properties can not be overridden.", property));
+						}
 					}
 				}
 				Files.write(applicationProperties.toPath(), applicationPropertiesContents.getBytes());
@@ -361,6 +378,22 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			//no user provided generated project home, fall back to the default used by the Initializr
 			getLog().info("Project is generated at " + project.toString());
 		}
+	}
+
+	private boolean isStarterProperty(String property) {
+		boolean result = false;
+		final String PREFIX = "^";
+		final String SUFFIX = "\\s*=";
+		property = property.substring(0, property.indexOf('=') + 1);
+		if (property.matches(PREFIX + SPRING_APPLICATION_NAME + SUFFIX) ||
+				property.matches(PREFIX + SPRING_AUTOCONFIGURE_EXCLUDE + SUFFIX) ||
+				property.matches(PREFIX + MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + SUFFIX) ||
+				property.matches(PREFIX + INFO_APP_VERSION + SUFFIX) ||
+				property.matches(PREFIX + INFO_APP_DESCRIPTION + SUFFIX) ||
+				property.matches(PREFIX + INFO_APP_NAME + SUFFIX)) {
+			result = true;
+		}
+		return result;
 	}
 
 	private void addCopyrightToJavaFiles(String generatedAppHome) throws IOException {

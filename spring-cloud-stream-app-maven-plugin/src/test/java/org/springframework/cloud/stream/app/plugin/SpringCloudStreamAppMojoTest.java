@@ -154,7 +154,6 @@ public class SpringCloudStreamAppMojoTest {
 
     @Test
     public void testAppPropertiesWithAppProp() throws Exception {
-
         final String ENTRY_ONE = "hello=world";
         final String ENTRY_TWO = "foo=bar";
         Field generatedProjectHome = this.mojoClazz.getDeclaredField("generatedProjectHome");
@@ -173,6 +172,28 @@ public class SpringCloudStreamAppMojoTest {
         this.appPropertyValues.add(ENTRY_TWO);
         validateApplicationProperties(8);
     }
+
+
+    @Test
+    public void testAppPropertiesWithExistingProps() throws Exception {
+        final String ENTRY_ONE = "spring.application.name =foo";
+        final String ENTRY_TWO = "foo=bar";
+        Field generatedProjectHome = this.mojoClazz.getDeclaredField("generatedProjectHome");
+        generatedProjectHome.setAccessible(true);
+        ReflectionUtils.setField(generatedProjectHome, this.springCloudStreamAppMojo, this.projectHome);
+        Field appPropertiesField = this.mojoClazz.getDeclaredField("additionalAppProperties");
+        appPropertiesField.setAccessible(true);
+        List<String> appProperties = new ArrayList<>();
+        appProperties.add(ENTRY_ONE);
+        appProperties.add(ENTRY_TWO);
+        ReflectionUtils.setField(appPropertiesField, this.springCloudStreamAppMojo, appProperties);
+
+        this.springCloudStreamAppMojo.execute();
+
+        this.appPropertyValues.add(ENTRY_TWO);
+        validateApplicationProperties(7);
+    }
+
 
     private void validateApplicationProperties(int expectedCount) throws Exception{
         Stream<Path> pathStream =
