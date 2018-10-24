@@ -212,7 +212,7 @@ public class MavenModelUtils {
         }
 
         final Xpp3Dom build = SpringCloudStreamPluginUtils.addElement(image, "build");
-        SpringCloudStreamPluginUtils.addElement(build, "from", "anapsix/alpine-java:8");
+        SpringCloudStreamPluginUtils.addElement(build, "from", "springcloud/openjdk");
 
         final Xpp3Dom volumes = SpringCloudStreamPluginUtils.addElement(build, "volumes");
         SpringCloudStreamPluginUtils.addElement(volumes, "volume", "/tmp");
