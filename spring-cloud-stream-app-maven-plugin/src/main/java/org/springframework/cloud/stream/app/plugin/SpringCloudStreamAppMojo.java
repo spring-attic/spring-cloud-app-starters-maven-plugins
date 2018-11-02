@@ -332,8 +332,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						INFO_APP_NAME + "=@project.artifactId@" + "\n" +
 						INFO_APP_DESCRIPTION + "=@project.description@" + "\n" +
 						INFO_APP_VERSION + "=@project.version@" + "\n" +
-						MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + "=health,info,bindings" + "\n" +
-						SPRING_AUTOCONFIGURE_EXCLUDE + "=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration" + "\n";
+						MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + "=health,info,bindings" + "\n";
 				if(this.additionalAppProperties != null && !this.additionalAppProperties.isEmpty()){
 					for(String property : this.additionalAppProperties) {
 						if(!isStarterProperty(property)) {
