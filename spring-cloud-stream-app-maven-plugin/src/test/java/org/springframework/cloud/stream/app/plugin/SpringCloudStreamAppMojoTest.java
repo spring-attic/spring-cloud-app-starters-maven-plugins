@@ -149,7 +149,7 @@ public class SpringCloudStreamAppMojoTest {
     @Test
     public void testAppPropertiesNoAppProp() throws Exception {
         this.springCloudStreamAppMojo.execute();
-        validateApplicationProperties(6);
+        validateApplicationProperties(5);
     }
 
     @Test
@@ -170,7 +170,7 @@ public class SpringCloudStreamAppMojoTest {
 
         this.appPropertyValues.add(ENTRY_ONE);
         this.appPropertyValues.add(ENTRY_TWO);
-        validateApplicationProperties(8);
+        validateApplicationProperties(7);
     }
 
 
@@ -191,7 +191,7 @@ public class SpringCloudStreamAppMojoTest {
         this.springCloudStreamAppMojo.execute();
 
         this.appPropertyValues.add(ENTRY_TWO);
-        validateApplicationProperties(7);
+        validateApplicationProperties(6);
     }
 
 
