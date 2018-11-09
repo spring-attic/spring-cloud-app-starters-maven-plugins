@@ -57,7 +57,8 @@ import static org.junit.Assert.assertThat;
  */
 public class SpringCloudStreamAppMojoTest {
 
-    private static final String projectHome = "./target/apps";
+	private static final String projectHome = new File(
+			new File(System.getProperty("user.dir"), "target"), "apps2").getPath();
 
     private SpringCloudStreamAppMojo springCloudStreamAppMojo = new SpringCloudStreamAppMojo();
 
