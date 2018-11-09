@@ -108,8 +108,6 @@ public class SpringCloudStreamAppMojoTest {
         this.appPropertyValues.add("info.app.description=@project.description@");
         this.appPropertyValues.add("info.app.version=@project.version@");
         this.appPropertyValues.add("management.endpoints.web.exposure.include=health,info,bindings");
-        this.appPropertyValues.add("spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration");
-
     }
 
     @Test
@@ -205,7 +203,8 @@ public class SpringCloudStreamAppMojoTest {
         BufferedReader br = new BufferedReader(new FileReader(appPropsFile));
         int propCount = 0 ;
         while (br.ready()) {
-            assertThat(this.appPropertyValues.contains(br.readLine()), is(true));
+            String line = br.readLine();
+            assertThat("The " + line + " is not contained!", this.appPropertyValues.contains(line), is(true));
             propCount++;
         }
         assertThat(propCount, equalTo(expectedCount));
