@@ -82,7 +82,7 @@ public class MavenModelUtils {
             License license = new License();
             license.setName("Apache License, Version 2.0");
             license.setUrl("http://www.apache.org/licenses/LICENSE-2.0");
-            license.setComments("Copyright 2014-2017 the original author or authors.\n" +
+            license.setComments("Copyright 2014-2018 the original author or authors.\n" +
                     "\n" +
                     "Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
                     "you may not use this file except in compliance with the License.\n" +
