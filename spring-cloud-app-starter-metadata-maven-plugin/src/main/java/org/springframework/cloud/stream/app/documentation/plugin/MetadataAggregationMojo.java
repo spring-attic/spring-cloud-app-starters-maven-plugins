@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 the original author or authors.
+ * Copyright 2017-2018 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -52,6 +56,7 @@ import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
 
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import static org.springframework.boot.configurationprocessor.metadata.ItemHint.ValueHint;
 import static org.springframework.boot.configurationprocessor.metadata.ItemHint.ValueProvider;
@@ -72,7 +77,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 	static final String METADATA_PATH = "META-INF/spring-configuration-metadata.json";
 	static final String WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
-	public static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
+	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
+	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
@@ -162,26 +168,35 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		return new Result(metadata, whiteList);
 	}
 
-	private Properties merge(Properties whitelist, InputStream is) throws IOException {
-		Properties temp = new Properties();
-		temp.load(is);
+	Properties merge(Properties whitelist, InputStream is) throws IOException {
+		Properties mergedProperties = new Properties();
+		mergedProperties.load(is);
 
-		if (!temp.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
-			getLog().warn("Whitelist properties missing required key " + CONFIGURATION_PROPERTIES_CLASSES);
+		if (!mergedProperties.containsKey(CONFIGURATION_PROPERTIES_CLASSES) && !mergedProperties.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
+			getLog().warn(String.format("Whitelist properties does not contain any required keys: %s",
+				StringUtils.arrayToCommaDelimitedString(new String[] {CONFIGURATION_PROPERTIES_CLASSES,
+					CONFIGURATION_PROPERTIES_NAMES})));
 			return whitelist;
 		}
 
-		getLog().debug("Adding ConfigurationProperties " + temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES));
-
 		if (!CollectionUtils.isEmpty(whitelist)) {
-			String value = whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES);
-			if (!value.contains(temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES))) {
-				value = value + "," + temp.getProperty(CONFIGURATION_PROPERTIES_CLASSES);
-				temp.put(CONFIGURATION_PROPERTIES_CLASSES, value);
-			}
+			mergeCommaDelimitedValue(whitelist, mergedProperties, CONFIGURATION_PROPERTIES_CLASSES);
+			mergeCommaDelimitedValue(whitelist, mergedProperties, CONFIGURATION_PROPERTIES_NAMES);
 		}
 
-		return temp;
+		return mergedProperties;
+	}
+
+	private void mergeCommaDelimitedValue(Properties currentProperties, Properties newProperties, String key) {
+		if (currentProperties.containsKey(key) || newProperties.containsKey(key)) {
+			Collection<String> values = StringUtils.commaDelimitedListToSet(currentProperties.getProperty(key));
+			values.addAll(StringUtils.commaDelimitedListToSet(newProperties.getProperty(key)));
+			if (newProperties.containsKey(key)) {
+				getLog().debug(String.format("Merging whitelist property %s=%s", key, newProperties.getProperty(key)));
+			}
+			newProperties.setProperty(key, StringUtils.collectionToCommaDelimitedString(values));
+
+		}
 	}
 
 	/**
