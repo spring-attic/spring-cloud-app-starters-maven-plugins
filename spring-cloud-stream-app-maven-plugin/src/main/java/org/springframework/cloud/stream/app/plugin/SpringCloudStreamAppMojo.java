@@ -133,6 +133,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	List<Plugin> additionalPlugins = new ArrayList<>();
 
 	@Parameter
+	List<String> globalAppProperties;
+
+	@Parameter
 	List<String> additionalAppProperties;
 
 	@Parameter
@@ -333,8 +336,19 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						INFO_APP_DESCRIPTION + "=@project.description@" + "\n" +
 						INFO_APP_VERSION + "=@project.version@" + "\n" +
 						MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + "=health,info,bindings" + "\n";
-				if(this.additionalAppProperties != null && !this.additionalAppProperties.isEmpty()){
-					for(String property : this.additionalAppProperties) {
+				List<String> totalAppProperties = new ArrayList<>();
+				if (!CollectionUtils.isEmpty(this.additionalAppProperties) && !CollectionUtils.isEmpty(this.globalAppProperties)) {
+					totalAppProperties.addAll(this.additionalAppProperties);
+					totalAppProperties.addAll(this.globalAppProperties);
+				}
+				else if (!CollectionUtils.isEmpty(this.additionalAppProperties)) {
+					totalAppProperties.addAll(this.additionalAppProperties);
+				}
+				else if (!CollectionUtils.isEmpty(this.globalAppProperties)) {
+					totalAppProperties.addAll(this.globalAppProperties);
+				}
+				if(!CollectionUtils.isEmpty(totalAppProperties)){
+					for(String property : totalAppProperties) {
 						if(!isStarterProperty(property)) {
 							applicationPropertiesContents = applicationPropertiesContents.concat(String.format("%s\n", property));
 						}
