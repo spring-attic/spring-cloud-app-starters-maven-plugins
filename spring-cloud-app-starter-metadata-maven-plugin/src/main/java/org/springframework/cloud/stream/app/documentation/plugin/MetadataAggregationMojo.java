@@ -76,7 +76,8 @@ import static org.springframework.boot.configurationprocessor.metadata.ItemHint.
 public class MetadataAggregationMojo extends AbstractMojo {
 
 	static final String METADATA_PATH = "META-INF/spring-configuration-metadata.json";
-	static final String WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
+	static final String WHITELIST_PATH = "META-INF/dataflow-configuration-metadata-whitelist.properties";
+	static final String BACKUP_WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
 	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
@@ -139,6 +140,15 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							whiteList = merge(whiteList, is);
 						}
 					}
+					else {
+						File backupLocalWhiteList = new File(file, BACKUP_WHITELIST_PATH);
+						if (backupLocalWhiteList.canRead()) {
+							try (InputStream is = new FileInputStream(backupLocalWhiteList)) {
+								getLog().debug("!!!! Merging whitelist from " + path);
+								whiteList = merge(whiteList, is);
+							}
+						}
+					}
 				}
 				else {
 					try (ZipFile zipFile = new ZipFile(file)) {
@@ -156,6 +166,15 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							try (InputStream inputStream = zipFile.getInputStream(entry)) {
 								getLog().debug("Merging whitelist from " + path);
 								whiteList = merge(whiteList, inputStream);
+							}
+						}
+						else {
+							entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
+							if (entry != null) {
+								try (InputStream inputStream = zipFile.getInputStream(entry)) {
+									getLog().debug("Merging whitelist from " + path);
+									whiteList = merge(whiteList, inputStream);
+								}
 							}
 						}
 					}
