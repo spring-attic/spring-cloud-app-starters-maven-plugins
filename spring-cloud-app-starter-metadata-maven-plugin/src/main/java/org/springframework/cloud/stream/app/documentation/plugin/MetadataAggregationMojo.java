@@ -134,11 +134,9 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					if (localWhiteList.canRead()) {
 						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
 					}
-					else {
-						File backupLocalWhiteList = new File(file, BACKUP_WHITELIST_PATH);
-						if (backupLocalWhiteList.canRead()) {
-							whiteList = getWhitelistFromFile(whiteList, path, backupLocalWhiteList);
-						}
+					File backupLocalWhiteList = new File(file, BACKUP_WHITELIST_PATH);
+					if (backupLocalWhiteList.canRead()){
+						whiteList = getWhitelistFromFile(whiteList, path, backupLocalWhiteList);
 					}
 				}
 				else {
@@ -156,11 +154,9 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						if (entry != null) {
 							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 						}
-						else {
-							entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
-							if (entry != null) {
-								whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
-							}
+						entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
+						if (entry != null) {
+							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 						}
 					}
 				}
