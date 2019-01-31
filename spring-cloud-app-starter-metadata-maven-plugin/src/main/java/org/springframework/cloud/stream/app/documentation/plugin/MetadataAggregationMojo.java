@@ -27,13 +27,10 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -135,18 +132,12 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					}
 					File localWhiteList = new File(file, WHITELIST_PATH);
 					if (localWhiteList.canRead()) {
-						try (InputStream is = new FileInputStream(localWhiteList)) {
-							getLog().debug("!!!! Merging whitelist from " + path);
-							whiteList = merge(whiteList, is);
-						}
+						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
 					}
 					else {
 						File backupLocalWhiteList = new File(file, BACKUP_WHITELIST_PATH);
 						if (backupLocalWhiteList.canRead()) {
-							try (InputStream is = new FileInputStream(backupLocalWhiteList)) {
-								getLog().debug("!!!! Merging whitelist from " + path);
-								whiteList = merge(whiteList, is);
-							}
+							whiteList = getWhitelistFromFile(whiteList, path, backupLocalWhiteList);
 						}
 					}
 				}
@@ -163,18 +154,12 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						}
 						entry = zipFile.getEntry(WHITELIST_PATH);
 						if (entry != null) {
-							try (InputStream inputStream = zipFile.getInputStream(entry)) {
-								getLog().debug("Merging whitelist from " + path);
-								whiteList = merge(whiteList, inputStream);
-							}
+							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 						}
 						else {
 							entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
 							if (entry != null) {
-								try (InputStream inputStream = zipFile.getInputStream(entry)) {
-									getLog().debug("Merging whitelist from " + path);
-									whiteList = merge(whiteList, inputStream);
-								}
+								whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 							}
 						}
 					}
@@ -185,6 +170,22 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
 		return new Result(metadata, whiteList);
+	}
+
+	private Properties getWhitelistFromZipFile(Properties whiteList, String path, ZipFile zipFile, ZipEntry entry) throws IOException {
+		try (InputStream inputStream = zipFile.getInputStream(entry)) {
+			getLog().debug("Merging whitelist from " + path);
+			whiteList = merge(whiteList, inputStream);
+		}
+		return whiteList;
+	}
+
+	private Properties getWhitelistFromFile(Properties whiteList, String path, File localWhiteList) throws IOException {
+		try (InputStream is = new FileInputStream(localWhiteList)) {
+			getLog().debug("!!!! Merging whitelist from " + path);
+			whiteList = merge(whiteList, is);
+		}
+		return whiteList;
 	}
 
 	Properties merge(Properties whitelist, InputStream is) throws IOException {
