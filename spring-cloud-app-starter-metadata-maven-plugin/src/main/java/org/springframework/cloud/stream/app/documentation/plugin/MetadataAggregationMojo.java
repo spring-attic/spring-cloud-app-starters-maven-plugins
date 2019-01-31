@@ -134,6 +134,12 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					if (localWhiteList.canRead()) {
 						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
 					}
+					else {
+						File backupWhitelist = new File(file, BACKUP_WHITELIST_PATH);
+						if (backupWhitelist.canRead()) {
+							whiteList = getWhitelistFromFile(whiteList, path, backupWhitelist);
+						}
+					}
 				}
 				else {
 					try (ZipFile zipFile = new ZipFile(file)) {
@@ -149,6 +155,12 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						entry = zipFile.getEntry(WHITELIST_PATH);
 						if (entry != null) {
 							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
+						}
+						else {
+							entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
+							if (entry != null) {
+								whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
+							}
 						}
 					}
 				}
