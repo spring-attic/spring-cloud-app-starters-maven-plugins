@@ -134,10 +134,6 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					if (localWhiteList.canRead()) {
 						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
 					}
-					File backupLocalWhiteList = new File(file, BACKUP_WHITELIST_PATH);
-					if (backupLocalWhiteList.canRead()){
-						whiteList = getWhitelistFromFile(whiteList, path, backupLocalWhiteList);
-					}
 				}
 				else {
 					try (ZipFile zipFile = new ZipFile(file)) {
@@ -151,10 +147,6 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							}
 						}
 						entry = zipFile.getEntry(WHITELIST_PATH);
-						if (entry != null) {
-							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
-						}
-						entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
 						if (entry != null) {
 							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 						}
@@ -229,6 +221,11 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			entry = new ZipEntry(WHITELIST_PATH);
 			jos.putNextEntry(entry);
 			result.whitelist.store(jos, "Describes whitelisted properties for this app");
+
+			entry = new ZipEntry(BACKUP_WHITELIST_PATH);
+			jos.putNextEntry(entry);
+			result.whitelist.store(jos, "Describes whitelisted properties for this app");
+
 			getLog().info(String.format("Attaching %s to current project", output.getCanonicalPath()));
 			projectHelper.attachArtifact(mavenProject, output, classifier);
 		}
