@@ -10,16 +10,16 @@
 
   <name>spring-cloud-stream-app-maven-plugin Maven Plugin</name>
 
-  <url>http://spring.io</url>
+  <url>https://spring.io</url>
 
   <organization>
     <name>Pivotal Software, Inc.</name>
-    <url>http://www.spring.io</url>
+    <url>https://www.spring.io</url>
   </organization>
   <licenses>
     <license>
       <name>Apache License, Version 2.0</name>
-      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+      <url>https://www.apache.org/licenses/LICENSE-2.0</url>
       <comments>
         Copyright 2014-2016 the original author or authors.
 
@@ -27,7 +27,7 @@
         you may not use this file except in compliance with the License.
         You may obtain a copy of the License at
 
-        http://www.apache.org/licenses/LICENSE-2.0
+        https://www.apache.org/licenses/LICENSE-2.0
 
         Unless required by applicable law or agreed to in writing, software
         distributed under the License is distributed on an "AS IS" BASIS,
@@ -57,7 +57,7 @@
       <name>Soby Chacko</name>
       <email>schacko at pivotal.io</email>
       <organization>Pivotal Software, Inc.</organization>
-      <organizationUrl>http://www.spring.io</organizationUrl>
+      <organizationUrl>https://www.spring.io</organizationUrl>
       <roles>
         <role>Developer</role>
       </roles>
@@ -257,7 +257,7 @@
       </snapshots>
       <id>spring-snapshots</id>
       <name>Spring Snapshots</name>
-      <url>http://repo.spring.io/libs-snapshot-local</url>
+      <url>https://repo.spring.io/libs-snapshot-local</url>
     </repository>
     <repository>
       <snapshots>
@@ -265,7 +265,7 @@
       </snapshots>
       <id>spring-milestones</id>
       <name>Spring Milestones</name>
-      <url>http://repo.spring.io/libs-milestone-local</url>
+      <url>https://repo.spring.io/libs-milestone-local</url>
     </repository>
     <repository>
       <snapshots>
@@ -273,7 +273,7 @@
       </snapshots>
       <id>spring-releases</id>
       <name>Spring Releases</name>
-      <url>http://repo.spring.io/release</url>
+      <url>https://repo.spring.io/release</url>
     </repository>
   </repositories>
 
