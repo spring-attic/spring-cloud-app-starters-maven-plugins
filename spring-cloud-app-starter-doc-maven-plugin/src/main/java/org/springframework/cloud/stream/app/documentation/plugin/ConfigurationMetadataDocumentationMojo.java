@@ -60,6 +60,9 @@ import org.springframework.util.StringUtils;
  *
  * @author Eric Bottard
  * @author David Turanski
+ * @see <a href=
+ * "https://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting
+ * Properties</a>
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
