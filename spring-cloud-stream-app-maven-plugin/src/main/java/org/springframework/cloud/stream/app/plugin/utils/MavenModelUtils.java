@@ -78,7 +78,7 @@ public class MavenModelUtils {
 
             model.setName("Apps Container");
             model.setDescription("Container project for generated apps");
-            model.setUrl("http://spring.io/spring-cloud");
+            model.setUrl("https://spring.io/spring-cloud");
             License license = new License();
             license.setName("Apache License, Version 2.0");
             license.setUrl("http://www.apache.org/licenses/LICENSE-2.0");
@@ -111,7 +111,7 @@ public class MavenModelUtils {
             developer.setName("Soby Chacko");
             developer.setEmail("schacko at pivotal.io");
             developer.setOrganization("Pivotal Software, Inc.");
-            developer.setOrganizationUrl("http://www.spring.io");
+            developer.setOrganizationUrl("https://www.spring.io");
             List<String> roles = new ArrayList<>();
             roles.add("developer");
             developer.setRoles(roles);
@@ -258,7 +258,7 @@ public class MavenModelUtils {
         org.apache.maven.model.Repository pluginRepo1 = new org.apache.maven.model.Repository();
         pluginRepo1.setId("spring-snapshots");
         pluginRepo1.setName("Spring Snapshots");
-        pluginRepo1.setUrl("http://repo.spring.io/libs-snapshot-local");
+        pluginRepo1.setUrl("https://repo.spring.io/libs-snapshot-local");
         pluginRepo1.setSnapshots(repositoryPolicy1);
 
         RepositoryPolicy repositoryPolicy2 = new RepositoryPolicy();
@@ -267,7 +267,7 @@ public class MavenModelUtils {
         pluginRepo2.setId("spring-milestones");
         pluginRepo2.setName("Spring Milestones");
         pluginRepo2.setSnapshots(repositoryPolicy2);
-        pluginRepo2.setUrl("http://repo.spring.io/libs-milestone-local");
+        pluginRepo2.setUrl("https://repo.spring.io/libs-milestone-local");
 
         List<Repository> pluginRepositories = pomModel.getPluginRepositories();
         if (!pluginRepositories.contains(pluginRepo1)){
