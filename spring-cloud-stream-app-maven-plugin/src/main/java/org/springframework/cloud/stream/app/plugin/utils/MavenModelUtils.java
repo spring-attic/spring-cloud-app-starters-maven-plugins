@@ -81,7 +81,7 @@ public class MavenModelUtils {
             model.setUrl("http://spring.io/spring-cloud");
             License license = new License();
             license.setName("Apache License, Version 2.0");
-            license.setUrl("http://www.apache.org/licenses/LICENSE-2.0");
+            license.setUrl("https://www.apache.org/licenses/LICENSE-2.0");
             license.setComments("Copyright 2014-2017 the original author or authors.\n" +
                     "\n" +
                     "Licensed under the Apache License, Version 2.0 (the \"License\");\n" +
