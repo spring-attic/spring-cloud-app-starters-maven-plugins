@@ -56,7 +56,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Eric Bottard
  * @see <a href=
- * "http://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting
+ * "https://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting
  * Properties</a>
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
