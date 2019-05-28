@@ -68,7 +68,7 @@ import static org.springframework.cloud.stream.app.plugin.utils.MavenModelUtils.
 @Mojo(name = "generate-app")
 public class SpringCloudStreamAppMojo extends AbstractMojo {
 
-	private static final String SPRING_CLOUD_STREAM_BINDER_GROUP_ID = "org.springframework.cloud";
+    private static final String SPRING_CLOUD_STREAM_BINDER_GROUP_ID = "org.springframework.cloud";
 
 	private static final String SPRING_APPLICATION_NAME = "spring.application.name";
 
@@ -81,8 +81,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private static final String MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE = "management.endpoints.web.exposure.include";
 
 	private static final String SPRING_AUTOCONFIGURE_EXCLUDE = "spring.autoconfigure.exclude";
+    public static final String DOCKER_HUB_ORG = "docker.hub.org";
 
-	@Parameter(defaultValue="${project}", readonly=true, required=true)
+    @Parameter(defaultValue="${project}", readonly=true, required=true)
 	private MavenProject project;
 
 	@Parameter
@@ -152,13 +153,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			this.additionalPlugins.add(MavenModelUtils.getMavenDependencyPlugin(this.copyResources));
 		}
 
-		if (StringUtils.isEmpty(dockerHubOrg)) {
-			projectGenerator.setDockerHubOrg("springcloud" + applicationType);
-		}
-		else {
-			projectGenerator.setDockerHubOrg(dockerHubOrg);
-		}
-
 		if (!entrypointType.equals(ENTRYPOINT_TYPE_EXEC)
 				&& !entrypointType.equals(ENTRYPOINT_TYPE_SHELL)) {
 			throw new MojoFailureException(
@@ -167,7 +161,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		}
 		getLog().info("Generating apps with entrypointType: " + entrypointType);
 
-		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
@@ -186,6 +179,16 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 					.stream()
 					.filter(p -> !mavenProject.getParent().getProperties().containsKey(p))
 					.forEach(p -> properties.put(p, mavenProject.getProperties().get(p)));
+
+			// Add docker organisation as property instead of hard coding into plugin configuration for more flexibility
+			if(!properties.containsKey(DOCKER_HUB_ORG)) {
+				if (StringUtils.isEmpty(dockerHubOrg)) {
+					properties.put("docker.hub.org",  "springcloud" + applicationType);
+				}
+		        else {
+					properties.put("docker.hub.org", dockerHubOrg);
+		        }
+			}
 
 			projectGenerator.setProperties(properties);
 		}

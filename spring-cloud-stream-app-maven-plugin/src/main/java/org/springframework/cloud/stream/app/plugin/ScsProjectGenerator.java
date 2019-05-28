@@ -75,7 +75,7 @@ public class ScsProjectGenerator extends ProjectGenerator {
         try {
             final InputStream is = new FileInputStream(inputFile);
             final OutputStream os = new FileOutputStream(tempOutputFile1);
-            MavenModelUtils.addDockerPlugin(request.getArtifactId(), request.getVersion(), dockerHubOrg, is, os, entrypointType);
+            MavenModelUtils.addDockerPlugin(request.getArtifactId(), request.getVersion(), is, os, entrypointType);
 
             FileInputStream is1 = new FileInputStream(tempOutputFile1);
             FileOutputStream os1 = new FileOutputStream(tempOutputFile2);

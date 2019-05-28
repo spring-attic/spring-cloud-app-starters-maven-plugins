@@ -185,7 +185,7 @@ public class MavenModelUtils {
         }
     }
 
-    public static void addDockerPlugin(String artifactId, String version, String dockerHubOrg, InputStream is, OutputStream os, String entrypointStyle) throws IOException {
+    public static void addDockerPlugin(String artifactId, String version, InputStream is, OutputStream os, String entrypointStyle) throws IOException {
         final MavenXpp3Reader reader = new MavenXpp3Reader();
 
         Model pomModel;
@@ -199,7 +199,7 @@ public class MavenModelUtils {
         final Plugin dockerPlugin = new Plugin();
         dockerPlugin.setGroupId("io.fabric8");
         dockerPlugin.setArtifactId("docker-maven-plugin");
-        dockerPlugin.setVersion("0.14.2");
+        dockerPlugin.setVersion("0.30.0");
 
         final Xpp3Dom mavenPluginConfiguration = new Xpp3Dom("configuration");
 
@@ -207,10 +207,10 @@ public class MavenModelUtils {
 
         final Xpp3Dom image = SpringCloudStreamPluginUtils.addElement(images, "image");
         if (!version.endsWith("BUILD-SNAPSHOT")) {
-            SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}:" + version);
+            SpringCloudStreamPluginUtils.addElement(image, "name", "${docker.hub.org}/${project.artifactId}:" + version);
         }
         else {
-            SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}");
+            SpringCloudStreamPluginUtils.addElement(image, "name",  "${docker.hub.org}/${project.artifactId}");
         }
 
         final Xpp3Dom build = SpringCloudStreamPluginUtils.addElement(image, "build");
