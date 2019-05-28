@@ -216,6 +216,9 @@ public class MavenModelUtils {
         final Xpp3Dom build = SpringCloudStreamPluginUtils.addElement(image, "build");
         SpringCloudStreamPluginUtils.addElement(build, "from", "springcloud/openjdk");
 
+        final Xpp3Dom tags = SpringCloudStreamPluginUtils.addElement(build, "tags");
+        SpringCloudStreamPluginUtils.addElement(tags, "tag", version);
+
         final Xpp3Dom volumes = SpringCloudStreamPluginUtils.addElement(build, "volumes");
         SpringCloudStreamPluginUtils.addElement(volumes, "volume", "/tmp");
 
