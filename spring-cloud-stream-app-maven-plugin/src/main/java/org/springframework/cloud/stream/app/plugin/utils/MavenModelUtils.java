@@ -68,7 +68,7 @@ public class MavenModelUtils {
         build.addPlugin(plugin);
     }
 
-    public static Model getModelFromContainerPom(File genProjecthome, String groupId, String version) throws IOException, XmlPullParserException {
+    public static Model getModelFromContainerPom(File genProjecthome, String groupId, String version, DistributionManagement distributionManagement) throws IOException, XmlPullParserException {
         File pom = new File(genProjecthome, "pom.xml");
         Model model = pom.exists() ? getModel(pom) : null;
         if (model != null) {
@@ -119,35 +119,37 @@ public class MavenModelUtils {
             developers.add(developer);
             model.setDevelopers(developers);
 
-            DistributionManagement distributionManagement = new DistributionManagement();
 
-            DeploymentRepository releaseRepo = new DeploymentRepository();
-            releaseRepo.setId("repo.spring.io");
-            releaseRepo.setName("Spring Release Repository");
-            releaseRepo.setUrl("https://repo.spring.io/libs-release-local");
-            distributionManagement.setRepository(releaseRepo);
+            if(distributionManagement == null) {
+                distributionManagement = new DistributionManagement();
 
-            DeploymentRepository snapshotRepo = new DeploymentRepository();
-            snapshotRepo.setId("repo.spring.io");
-            snapshotRepo.setName("Spring Snapshot Repository");
-            snapshotRepo.setUrl("https://repo.spring.io/libs-snapshot-local");
-            distributionManagement.setSnapshotRepository(snapshotRepo);
+                DeploymentRepository releaseRepo = new DeploymentRepository();
+                releaseRepo.setId("repo.spring.io");
+                releaseRepo.setName("Spring Release Repository");
+                releaseRepo.setUrl("https://repo.spring.io/libs-release-local");
+                distributionManagement.setRepository(releaseRepo);
 
+                DeploymentRepository snapshotRepo = new DeploymentRepository();
+                snapshotRepo.setId("repo.spring.io");
+                snapshotRepo.setName("Spring Snapshot Repository");
+                snapshotRepo.setUrl("https://repo.spring.io/libs-snapshot-local");
+                distributionManagement.setSnapshotRepository(snapshotRepo);
+
+                Profile profile = new Profile();
+                profile.setId("milestone");
+                DistributionManagement milestoneDistManagement = new DistributionManagement();
+
+                DeploymentRepository milestoneRepo = new DeploymentRepository();
+                milestoneRepo.setId("repo.spring.io");
+                milestoneRepo.setName("Spring Milestone Repository");
+                milestoneRepo.setUrl("https://repo.spring.io/libs-milestone-local");
+                milestoneDistManagement.setRepository(milestoneRepo);
+                profile.setDistributionManagement(milestoneDistManagement);
+                List<Profile> profiles = new ArrayList<>();
+                profiles.add(profile);
+                model.setProfiles(profiles);
+            }
             model.setDistributionManagement(distributionManagement);
-
-            Profile profile = new Profile();
-            profile.setId("milestone");
-            DistributionManagement milestoneDistManagement = new DistributionManagement();
-
-            DeploymentRepository milestoneRepo = new DeploymentRepository();
-            milestoneRepo.setId("repo.spring.io");
-            milestoneRepo.setName("Spring Milestone Repository");
-            milestoneRepo.setUrl("https://repo.spring.io/libs-milestone-local");
-            milestoneDistManagement.setRepository(milestoneRepo);
-            profile.setDistributionManagement(milestoneDistManagement);
-            List<Profile> profiles = new ArrayList<>();
-            profiles.add(profile);
-            model.setProfiles(profiles);
 
             getBuildWithDockerPluginDefinition(model);
         }

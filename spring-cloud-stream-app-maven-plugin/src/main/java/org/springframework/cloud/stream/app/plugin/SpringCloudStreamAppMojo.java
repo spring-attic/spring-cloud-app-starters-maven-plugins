@@ -334,7 +334,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 											 File generatedProjectHome, String origKey, String generatedProjectVersion) throws IOException, XmlPullParserException {
 		if (generatedProjectHome != null && project != null) {
 			String generatedAppHome = moveProjectWithMavenModelsUpdated(appArtifactId, project, generatedProjectHome,
-					value.isTestsIgnored(), generatedProjectVersion, value);
+					value.isTestsIgnored(), generatedProjectVersion, value, distributionManagement);
 			try {
 				final File applicationProperties = new File(generatedAppHome, "src/main/resources/application.properties");
 				String applicationPropertiesContents = SPRING_APPLICATION_NAME + "=${vcap.application.name:" + origKey + "}\n" +
@@ -520,11 +520,11 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	private String moveProjectWithMavenModelsUpdated(String key, File project,
 													 File generatedProjectHome, boolean testIgnored,
-													 String generatedProjectVersion, GeneratableApp app) throws IOException, XmlPullParserException {
+													 String generatedProjectVersion, GeneratableApp app, DistributionManagement distributionManagement) throws IOException, XmlPullParserException {
 
 		Model model = isNewDir(generatedProjectHome) ? MavenModelUtils.populateModel(generatedProjectHome.getName(),
 				getApplicationGroupId(applicationType, app), generatedProjectVersion)
-				: MavenModelUtils.getModelFromContainerPom(generatedProjectHome, getApplicationGroupId(applicationType, app), generatedProjectVersion);
+				: MavenModelUtils.getModelFromContainerPom(generatedProjectHome, getApplicationGroupId(applicationType, app), generatedProjectVersion, distributionManagement);
 
 		if (model != null && MavenModelUtils.addModuleIntoModel(model, key)) {
 			MavenModelUtils.writeModelToFile(model, new FileOutputStream(new File(generatedProjectHome, "pom.xml")));
