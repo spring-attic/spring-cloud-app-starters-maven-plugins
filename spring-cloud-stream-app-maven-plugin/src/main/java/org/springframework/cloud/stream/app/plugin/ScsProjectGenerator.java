@@ -19,6 +19,7 @@ package org.springframework.cloud.stream.app.plugin;
 import io.spring.initializr.generator.ProjectGenerator;
 import io.spring.initializr.generator.ProjectRequest;
 import io.spring.initializr.metadata.Dependency;
+import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
@@ -50,6 +51,8 @@ public class ScsProjectGenerator extends ProjectGenerator {
     private List<Plugin> additionalPlugins;
 
     private List<Dependency> requiresUnpack;
+
+    private DistributionManagement distributionManagement;
 
     @Override
     protected File doGenerateProjectStructure(ProjectRequest request) {
@@ -113,7 +116,7 @@ public class ScsProjectGenerator extends ProjectGenerator {
                 MavenModelUtils.addAdditionalBoms(pomModel, additionalBoms);
             }
             MavenModelUtils.addExclusionsForKafka(pomModel);
-            MavenModelUtils.addDistributionManagement(pomModel);
+            MavenModelUtils.addDistributionManagement(pomModel, distributionManagement);
             MavenModelUtils.addProfiles(pomModel);
             MavenModelUtils.addProperties(pomModel, properties);
             MavenModelUtils.writeModelToFile(pomModel, os1);
@@ -156,5 +159,9 @@ public class ScsProjectGenerator extends ProjectGenerator {
 
     public void setRequiresUnpack(List<Dependency> requiresUnpack) {
         this.requiresUnpack = requiresUnpack;
+    }
+
+    public void setDistributionManagement(DistributionManagement distributionManagement) {
+        this.distributionManagement = distributionManagement;
     }
 }

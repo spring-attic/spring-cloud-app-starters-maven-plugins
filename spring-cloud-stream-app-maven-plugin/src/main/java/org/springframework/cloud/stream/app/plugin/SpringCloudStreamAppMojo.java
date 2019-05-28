@@ -38,6 +38,7 @@ import io.spring.initializr.generator.ProjectRequest;
 import io.spring.initializr.metadata.Dependency;
 import io.spring.initializr.metadata.InitializrMetadata;
 import org.apache.commons.io.FileUtils;
+import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
@@ -141,6 +142,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	@Parameter
 	private List<Dependency> requiresUnpack = new ArrayList<>();
 
+	@Parameter
+	private DistributionManagement distributionManagement;
+
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -168,6 +172,8 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
 		projectGenerator.setRequiresUnpack(requiresUnpack);
+		projectGenerator.setDistributionManagement(distributionManagement);
+
 		if (project != null) {
 			@SuppressWarnings("unchecked")
 			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();
@@ -561,6 +567,14 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				throw new IllegalStateException(e);
 			}
 		}
+	}
+
+	public DistributionManagement getDistributionManagement() {
+		return distributionManagement;
+	}
+
+	public void setDistributionManagement(DistributionManagement distributionManagement) {
+		this.distributionManagement = distributionManagement;
 	}
 
 	private class InitializrDelegate {

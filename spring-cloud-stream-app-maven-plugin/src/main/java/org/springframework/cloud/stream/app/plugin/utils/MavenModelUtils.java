@@ -345,21 +345,21 @@ public class MavenModelUtils {
         }
     }
 
-    public static void addDistributionManagement(Model pomModel) {
-        DistributionManagement distributionManagement = new DistributionManagement();
+    public static void addDistributionManagement(Model pomModel, DistributionManagement distributionManagement) {
+        if(distributionManagement == null) {
+            distributionManagement = new DistributionManagement();
+            DeploymentRepository releaseRepo = new DeploymentRepository();
+            releaseRepo.setId("repo.spring.io");
+            releaseRepo.setName("Spring Release Repository");
+            releaseRepo.setUrl("https://repo.spring.io/libs-release-local");
+            distributionManagement.setRepository(releaseRepo);
 
-        DeploymentRepository releaseRepo = new DeploymentRepository();
-        releaseRepo.setId("repo.spring.io");
-        releaseRepo.setName("Spring Release Repository");
-        releaseRepo.setUrl("https://repo.spring.io/libs-release-local");
-        distributionManagement.setRepository(releaseRepo);
-
-        DeploymentRepository snapshotRepo = new DeploymentRepository();
-        snapshotRepo.setId("repo.spring.io");
-        snapshotRepo.setName("Spring Snapshot Repository");
-        snapshotRepo.setUrl("https://repo.spring.io/libs-snapshot-local");
-        distributionManagement.setSnapshotRepository(snapshotRepo);
-
+            DeploymentRepository snapshotRepo = new DeploymentRepository();
+            snapshotRepo.setId("repo.spring.io");
+            snapshotRepo.setName("Spring Snapshot Repository");
+            snapshotRepo.setUrl("https://repo.spring.io/libs-snapshot-local");
+            distributionManagement.setSnapshotRepository(snapshotRepo);
+        }
         pomModel.setDistributionManagement(distributionManagement);
     }
 
