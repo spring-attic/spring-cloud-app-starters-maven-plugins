@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.springframework.cloud.stream.app.plugin.Triggers;
 
 /**
  * @author Soby Chacko
@@ -128,7 +129,40 @@ public class SpringCloudStreamPluginUtils {
                     sb.append(l).append("\n").append("import org.springframework.context.annotation.Import;\n");
                 }
                 else if (l.startsWith("@SpringBootApplication")) {
-                    sb.append(l).append("\n").append("@Import(").append(autoConfigClazz).append(")");
+                    sb.append(l).append("\n").append("@Import({").append(autoConfigClazz).append("})");
+                }
+                else {
+                    sb.append(l);
+                }
+                sb.append("\n");
+            });
+            Files.write(f1.toPath(), sb.toString().getBytes());
+        }
+
+    }
+
+        public static void addTriggers(String generatedAppHome, Triggers triggers) throws IOException {
+        Collection<File> files = FileUtils.listFiles(new File(generatedAppHome, "src/main/java"), null, true);
+        Optional<File> first = files.stream()
+                .filter(f -> f.getName().endsWith("Application.java"))
+                .findFirst();
+
+        if (first.isPresent()){
+            StringBuilder sb = new StringBuilder();
+            File f1 = first.get();
+            Files.readAllLines(f1.toPath()).forEach(l -> {
+//                if (l.startsWith("import org.springframework.boot.autoconfigure.SpringBootApplication;")) {
+//                    sb.append(l).append("\n").append("import org.springframework.context.annotation.Import;\n");
+//                }
+                if (l.startsWith("@Import")) {
+                    int index = l.indexOf("}");
+                    String replaced = l.replace("}", ", " + triggers.getTriggerConfiguration() + "}");
+                    //sb.append(l).append("\n").append("import org.springframework.context.annotation.Import;\n");
+                    sb.append(replaced);
+                }
+                else if (l.startsWith("@SpringBootApplication")) {
+                    //sb.append(l).append("\n").append("@Import(").append(triggers.getTriggerConfiguration()).append(")\n")
+                    sb.append(l).append("\n@org.springframework.boot.context.properties.EnableConfigurationProperties(" + triggers.getTriggerProperties() + ")");
                 }
                 else {
                     sb.append(l);

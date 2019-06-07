@@ -28,8 +28,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -91,10 +89,13 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private List<CopyResource> copyResources;
 
 	@Parameter
-	private Bom bom;
+	private List<Bom> boms;
 
 	@Parameter
 	private String generatedProjectHome;
+
+	@Parameter
+	private String configClass;
 
 	@Parameter
 	private String javaVersion;
@@ -118,7 +119,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private List<Repository> extraRepositories;
 
 	@Parameter
-	List<Dependency> additionalGlobalDependencies = new ArrayList<>();
+	List<Dependency> globalDependencies = new ArrayList<>();
+
+	@Parameter
+	List<Dependency> dependencies = new ArrayList<>();
 
 	@Parameter
 	private Map<String, BinderMetadata> binders = new HashMap<>();
@@ -140,6 +144,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	@Parameter
 	private List<Dependency> requiresUnpack = new ArrayList<>();
+
+	@Parameter
+	private Triggers triggers;
 
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
@@ -165,23 +172,23 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
-		projectGenerator.setAdditionalBoms(additionalBoms);
+		projectGenerator.setAdditionalBoms(boms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
 		projectGenerator.setRequiresUnpack(requiresUnpack);
 		if (project != null) {
-			@SuppressWarnings("unchecked")
-			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();
-			Optional<MavenProject> dependencies = collectedProjects.stream()
-					.filter(e -> e.getArtifactId().endsWith("dependencies")).findFirst();
-			MavenProject mavenProject = dependencies.get();
-			Properties  properties = new Properties();
-
-			mavenProject.getProperties().keySet()
-					.stream()
-					.filter(p -> !mavenProject.getParent().getProperties().containsKey(p))
-					.forEach(p -> properties.put(p, mavenProject.getProperties().get(p)));
-
-			projectGenerator.setProperties(properties);
+//			@SuppressWarnings("unchecked")
+//			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();
+//			Optional<MavenProject> globalDependencies = collectedProjects.stream()
+//					.filter(e -> e.getArtifactId().endsWith("globalDependencies")).findFirst();
+//			MavenProject mavenProject = globalDependencies.get();
+//			Properties  properties = new Properties();
+//
+//			mavenProject.getProperties().keySet()
+//					.stream()
+//					.filter(p -> !mavenProject.getParent().getProperties().containsKey(p))
+//					.forEach(p -> properties.put(p, mavenProject.getProperties().get(p)));
+//
+//			projectGenerator.setProperties(properties);
 		}
 
 		final InitializrDelegate initializrDelegate = new InitializrDelegate();
@@ -211,10 +218,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		List<String> artifactIds = new ArrayList<>();
 
 		String appArtifactId = !appType.equals("default") ? entry.getKey() + "-" + appType : entry.getKey();
-		String starterArtifactId = getStarterArtifactId(entry.getKey(), value);
-		Dependency starterDep = getDependency(starterArtifactId, generatedAppGroupId);
-		deps.add(starterDep);
-		artifactIds.add(starterArtifactId);
+		//String starterArtifactId = getStarterArtifactId(entry.getKey(), value);
+		//Dependency starterDep = getDependency(starterArtifactId, generatedAppGroupId);
+		//deps.add(starterDep);
+		//artifactIds.add(starterArtifactId);
 		if (!appType.equals("default")) {
 			String binderArtifactId = constructBinderArtifact(appType);
 			Dependency binderDep = getDependency(binderArtifactId, SPRING_CLOUD_STREAM_BINDER_GROUP_ID);
@@ -236,12 +243,22 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			}
 		}
 
-		for (Dependency globalDep : additionalGlobalDependencies) {
-			Dependency dep = getDependency(globalDep.getArtifactId(),
-					globalDep.getGroupId());
+
+		for (Dependency appDep : dependencies) {
+			Dependency dep = getDependency(appDep.getArtifactId(),
+					appDep.getGroupId(), appDep.getVersion());
 			deps.add(dep);
 			artifactIds.add(dep.getArtifactId());
 		}
+
+		for (Dependency globalDep : globalDependencies) {
+			Dependency dep = getDependency(globalDep.getArtifactId(),
+					globalDep.getGroupId(), globalDep.getVersion());
+			deps.add(dep);
+			artifactIds.add(dep.getArtifactId());
+		}
+
+
 
 		//Force a dependency independent of BOM
 		for (Dependency forceDep : value.getForceDependencies()) {
@@ -253,7 +270,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				dependency.setVersion(forceDep.getVersion());
 			}
 			else {
-				dependency.setBom(bom.getName());
+				//dependency.setBom(boms.get(0).getName());
 			}
 			deps.add(dependency);
 
@@ -271,7 +288,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 					dependency.setVersion(forceDep.getVersion());
 				}
 				else {
-					dependency.setBom(bom.getName());
+					//dependency.setBom(boms.get(0).getName());
 				}
 				deps.add(dependency);
 
@@ -287,17 +304,24 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			extraReposToAdd = extraRepositories.stream().filter(e -> extraRepoIds.contains(e.getId()))
 					.collect(Collectors.toList());
 		}
-		String[] repoIds = new String[]{};
-		if (!CollectionUtils.isEmpty(extraRepoIds)) {
-			repoIds = new String[extraRepoIds.size()];
-			repoIds = extraRepoIds.toArray(repoIds);
-		}
-		InitializrMetadata metadata = SpringCloudStreamAppMetadataBuilder.withDefaults()
+
+		SpringCloudStreamAppMetadataBuilder springCloudStreamAppMetadataBuilder = SpringCloudStreamAppMetadataBuilder.withDefaults()
 				.addRepositories(extraReposToAdd)
-				.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), repoIds)
 				.addJavaVersion(javaVersion)
 				.addBootVersion(bootVersion)
-				.addDependencyGroup(appArtifactId, depArray).build();
+				//.addBom(boms.get(0).getName(), boms.get(0).getGroupId(), boms.get(0).getArtifactId(), boms.get(0).getVersion())
+				.addDependencyGroup(appArtifactId, depArray);
+
+		boms.stream().forEach(bom -> {
+			if (!CollectionUtils.isEmpty(extraRepoIds)) {
+				springCloudStreamAppMetadataBuilder.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), (String[])extraRepoIds.toArray());
+			}
+			else {
+				springCloudStreamAppMetadataBuilder.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion());
+			}
+		});
+		InitializrMetadata metadata = springCloudStreamAppMetadataBuilder.build();
+
 		initializrDelegate.applyMetadata(metadata);
 		ProjectRequest projectRequest = initializrDelegate.getProjectRequest(appArtifactId, getApplicationGroupId(applicationType, value),
 				getDescription(appArtifactId), getPackageName(appArtifactId, value),
@@ -381,10 +405,20 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 					.collect(toList()));
 			String subPackage = orderedStarterArtifactTokens.stream().collect(Collectors.joining("."));
 
-			String toBeImported = StringUtils.isEmpty(value.getAutoConfigClass()) ?
-					String.format("%s.%s.%s.%s.%sConfiguration.class", "org.springframework.cloud", applicationType, "app", subPackage, s1)
-					: value.getAutoConfigClass();
+//			String toBeImported = StringUtils.isEmpty(value.getAutoConfigClass()) ?
+//					String.format("%s.%s.%s.%s.%sConfiguration.class", "org.springframework.cloud", applicationType, "app", subPackage, s1)
+//					: value.getAutoConfigClass();
+
+			String toBeImported = StringUtils.isEmpty(configClass) ?
+					String.format("%s.%sConfiguration.class", "org.springframework.function.app", s1)
+					: configClass;
+
+
+			//TODO: null check on configClass
 			SpringCloudStreamPluginUtils.addAutoConfigImport(generatedAppHome, toBeImported);
+			if (triggers != null) {
+				SpringCloudStreamPluginUtils.addTriggers(generatedAppHome, triggers);
+			}
 			addCopyrightToJavaFiles(generatedAppHome);
 		}
 		else if (project != null) {
@@ -491,7 +525,19 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		dependency.setId(s);
 		dependency.setGroupId(groupId);
 		dependency.setArtifactId(s);
-		dependency.setBom(bom.getName());
+		dependency.setBom(boms.get(0).getName());
+		return dependency;
+	}
+
+	private Dependency getDependency(String s, String groupId, String version) {
+		Dependency dependency = new Dependency();
+		dependency.setId(s);
+		dependency.setGroupId(groupId);
+		dependency.setArtifactId(s);
+		if (version != null) {
+			dependency.setVersion(version);
+		}
+
 		return dependency;
 	}
 
@@ -500,7 +546,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		dependency.setId(s);
 		dependency.setGroupId(groupId);
 		dependency.setArtifactId(s);
-		dependency.setBom(bom.getName());
+		dependency.setBom(boms.get(0).getName());
 		dependency.setScope(scope);
 		return dependency;
 	}

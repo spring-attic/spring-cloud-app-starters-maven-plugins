@@ -4,7 +4,7 @@
 
   <groupId>org.springframework.cloud.stream.app.plugin</groupId>
   <artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
-  <version>1.2.13.BUILD-SNAPSHOT</version>
+  <version>2.0.0.BUILD-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
   <description>spring cloud stream and task app generator plugin</description>
 

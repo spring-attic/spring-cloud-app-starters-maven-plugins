@@ -31,6 +31,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author Soby Chacko
@@ -323,6 +327,7 @@ public class MavenModelUtils {
     public static void addAdditionalBoms(Model pomModel, List<Bom> additionalBoms) throws IOException {
         DependencyManagement dependencyManagement = pomModel.getDependencyManagement();
         int i = 0;
+        List<String> bomArtifacts = dependencyManagement.getDependencies().stream().map(Dependency::getArtifactId).collect(Collectors.toList());
         for (Bom bom : additionalBoms) {
             Dependency dependency = new Dependency();
             dependency.setGroupId(bom.getGroupId());
@@ -330,7 +335,9 @@ public class MavenModelUtils {
             dependency.setVersion(bom.getVersion());
             dependency.setType("pom");
             dependency.setScope("import");
-            dependencyManagement.getDependencies().add(++i, dependency);
+            if(!bomArtifacts.contains(dependency.getArtifactId())) {
+                dependencyManagement.getDependencies().add(++i, dependency);
+            }
         }
 
         pomModel.setDependencyManagement(dependencyManagement);
