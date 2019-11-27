@@ -112,6 +112,8 @@ public class SpringCloudStreamAppMojoTest {
 		this.appPropertyValues.add("info.app.description=@project.description@");
 		this.appPropertyValues.add("info.app.version=@project.version@");
 		this.appPropertyValues.add("management.endpoints.web.exposure.include=health,info,bindings");
+		this.appPropertyValues.add("spring.cloud.stream.function.definition=fooSupplier");
+		this.appPropertyValues.add("spring.cloud.stream.function.bindings.fooSupplier-out-0=output");
 	}
 
 	@Test
@@ -160,7 +162,7 @@ public class SpringCloudStreamAppMojoTest {
 		ReflectionUtils.setField(generatedProjectHome, this.springCloudStreamAppMojo,
 				this.projectHome.getRoot().getAbsolutePath());
 		this.springCloudStreamAppMojo.execute();
-		validateApplicationProperties(5);
+		validateApplicationProperties(7);
 	}
 
 	@Test
@@ -182,7 +184,7 @@ public class SpringCloudStreamAppMojoTest {
 
 		this.appPropertyValues.add(ENTRY_ONE);
 		this.appPropertyValues.add(ENTRY_TWO);
-		validateApplicationProperties(7);
+		validateApplicationProperties(9);
 	}
 
 
@@ -204,7 +206,7 @@ public class SpringCloudStreamAppMojoTest {
 		this.springCloudStreamAppMojo.execute();
 
 		this.appPropertyValues.add(ENTRY_TWO);
-		validateApplicationProperties(6);
+		validateApplicationProperties(8);
 	}
 
 

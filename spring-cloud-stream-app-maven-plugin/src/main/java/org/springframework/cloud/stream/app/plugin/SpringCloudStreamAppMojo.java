@@ -364,7 +364,35 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						INFO_APP_DESCRIPTION + "=@project.description@" + "\n" +
 						INFO_APP_VERSION + "=@project.version@" + "\n" +
 						MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE + "=health,info,bindings" + "\n";
-				List<String> totalAppProperties = new ArrayList<>();
+				String[] functionDetectors = origKey.split("-");
+				String protocol = functionDetectors[0];
+				String appType = functionDetectors[1];
+				String functionBean;
+				String bindingName = "";
+				String functionProperties = "";
+				if (appType.equals("source")) {
+					functionBean = protocol + "Supplier";
+					bindingName = functionBean + "-out-0";
+
+					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+							"spring.cloud.stream.function.bindings." + bindingName + "=output" + "\n";
+				}
+				else if (appType.equals("sink")) {
+					functionBean = protocol + "Consumer";
+					bindingName = functionBean + "-in-0";
+
+					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+							"spring.cloud.stream.function.bindings." + bindingName + "=input" + "\n";
+				}
+				else {
+					functionBean = protocol + "Function";
+					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+							"spring.cloud.stream.function.bindings." + functionBean + "in-0" + "=input" + "\n" +
+							"spring.cloud.stream.function.bindings." + functionBean + "out-0" + "=output" + "\n";
+				}
+				applicationPropertiesContents = applicationPropertiesContents + functionProperties;
+
+						List<String> totalAppProperties = new ArrayList<>();
 				if (!CollectionUtils.isEmpty(this.additionalAppProperties) && !CollectionUtils.isEmpty(this.globalAppProperties)) {
 					totalAppProperties.addAll(this.additionalAppProperties);
 					totalAppProperties.addAll(this.globalAppProperties);
