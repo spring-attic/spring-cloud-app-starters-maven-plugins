@@ -148,10 +148,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			this.additionalPlugins.add(MavenModelUtils.getMavenDependencyPlugin(this.copyResources));
 		}
 
-		if (StringUtils.isEmpty(dockerHubOrg)) {
-			projectGenerator.setDockerHubOrg("springcloud" + applicationType);
-		}
-		else {
+		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
+
+		if (StringUtils.isNotEmpty(dockerHubOrg)) {
 			projectGenerator.setDockerHubOrg(dockerHubOrg);
 		}
 
@@ -163,7 +162,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		}
 		getLog().info("Generating apps with entrypointType: " + entrypointType);
 
-		projectGenerator.setDockerHubOrg("springcloud" + applicationType);
 		projectGenerator.setBomsWithHigherPrecedence(bomsWithHigherPrecedence);
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
