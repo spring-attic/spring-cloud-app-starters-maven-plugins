@@ -78,7 +78,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 	private static final String SPRING_AUTOCONFIGURE_EXCLUDE = "spring.autoconfigure.exclude";
 
-	@Parameter(defaultValue="${project}", readonly=true, required=true)
+	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
 
 	@Parameter
@@ -258,7 +258,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		}
 
 
-
 		//Force a dependency independent of BOM
 		for (Dependency forceDep : value.getForceDependencies()) {
 			Dependency dependency = new Dependency();
@@ -313,7 +312,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 
 		boms.stream().forEach(bom -> {
 			if (!CollectionUtils.isEmpty(extraRepoIds)) {
-				springCloudStreamAppMetadataBuilder.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), (String[])extraRepoIds.toArray());
+				springCloudStreamAppMetadataBuilder.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion(), (String[]) extraRepoIds.toArray());
 			}
 			else {
 				springCloudStreamAppMetadataBuilder.addBom(bom.getName(), bom.getGroupId(), bom.getArtifactId(), bom.getVersion());
@@ -333,7 +332,6 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 						null;
 
 		System.out.println("New project home: " + generatedProjectHome);
-
 
 
 		postProcessGeneratedProject(value, appArtifactId, project, generatedProjectHome, entry.getKey(), generatedProjectVersion);
@@ -373,26 +371,30 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				if (appType.equals("source")) {
 					functionBean = protocol + "Supplier";
 					bindingName = functionBean + "-out-0";
-
-					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
-							"spring.cloud.stream.function.bindings." + bindingName + "=output" + "\n";
+					if (!isFunctionDefinitionOverridden(this.additionalAppProperties)) {
+						functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+								"spring.cloud.stream.function.bindings." + bindingName + "=output" + "\n";
+					}
 				}
 				else if (appType.equals("sink")) {
 					functionBean = protocol + "Consumer";
 					bindingName = functionBean + "-in-0";
-
-					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
-							"spring.cloud.stream.function.bindings." + bindingName + "=input" + "\n";
+					if (!isFunctionDefinitionOverridden(this.additionalAppProperties)) {
+						functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+								"spring.cloud.stream.function.bindings." + bindingName + "=input" + "\n";
+					}
 				}
 				else {
 					functionBean = protocol + "Function";
-					functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
-							"spring.cloud.stream.function.bindings." + functionBean + "in-0" + "=input" + "\n" +
-							"spring.cloud.stream.function.bindings." + functionBean + "out-0" + "=output" + "\n";
+					if (!isFunctionDefinitionOverridden(this.additionalAppProperties)) {
+						functionProperties = "spring.cloud.stream.function.definition=" + functionBean + "\n" +
+								"spring.cloud.stream.function.bindings." + functionBean + "-in-0" + "=input" + "\n" +
+								"spring.cloud.stream.function.bindings." + functionBean + "-out-0" + "=output" + "\n";
+					}
 				}
 				applicationPropertiesContents = applicationPropertiesContents + functionProperties;
 
-						List<String> totalAppProperties = new ArrayList<>();
+				List<String> totalAppProperties = new ArrayList<>();
 				if (!CollectionUtils.isEmpty(this.additionalAppProperties) && !CollectionUtils.isEmpty(this.globalAppProperties)) {
 					totalAppProperties.addAll(this.additionalAppProperties);
 					totalAppProperties.addAll(this.globalAppProperties);
@@ -403,9 +405,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 				else if (!CollectionUtils.isEmpty(this.globalAppProperties)) {
 					totalAppProperties.addAll(this.globalAppProperties);
 				}
-				if(!CollectionUtils.isEmpty(totalAppProperties)){
-					for(String property : totalAppProperties) {
-						if(!isStarterProperty(property)) {
+				if (!CollectionUtils.isEmpty(totalAppProperties)) {
+					for (String property : totalAppProperties) {
+						if (!isStarterProperty(property)) {
 							applicationPropertiesContents = applicationPropertiesContents.concat(String.format("%s\n", property));
 						}
 						else {
@@ -457,6 +459,12 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 			//no user provided generated project home, fall back to the default used by the Initializr
 			getLog().info("Project is generated at " + project.toString());
 		}
+	}
+
+	private boolean isFunctionDefinitionOverridden(List<String> additionalAppProperties) {
+		return !CollectionUtils.isEmpty(additionalAppProperties) && additionalAppProperties
+				.stream()
+				.anyMatch(property -> property.startsWith("spring.cloud.stream.function.definition"));
 	}
 
 	private boolean isStarterProperty(String property) {
@@ -584,7 +592,7 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	}
 
 	private String constructBinderArtifact(String binder) {
-		if (binder.contains("-")){
+		if (binder.contains("-")) {
 			binder = org.springframework.util.StringUtils.split(binder, "-")[0];
 		}
 		return String.format("%s-%s", "spring-cloud-starter-stream", binder);
