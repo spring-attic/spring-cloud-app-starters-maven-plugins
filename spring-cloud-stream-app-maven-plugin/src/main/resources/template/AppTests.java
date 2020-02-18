@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2019-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-package org.springframework.cloud.stream.app.plugin;
+package {{app-package-name}};
 
-import io.spring.initializr.metadata.Dependency;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.ArrayList;
-import java.util.List;
+@RunWith(SpringRunner.class)
+@SpringBootTest
+public class {{app-class-name}}Tests {
 
-/**
- * @author Soby Chacko
- */
-public class BinderMetadata {
-
-	List<Dependency> forceDependencies = new ArrayList<>();
-
-	public List<Dependency> getForceDependencies() {
-		return forceDependencies;
-	}
-
-	public void setForceDependencies(List<Dependency> forceDependencies) {
-		this.forceDependencies = forceDependencies;
+	@Test
+	public void contextLoads() {
 	}
 
 }

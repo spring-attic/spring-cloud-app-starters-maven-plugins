@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2018 the original author or authors.
+ * Copyright 2017-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,11 @@
 package org.springframework.cloud.stream.app.documentation.plugin;
 
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
@@ -27,6 +29,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +52,7 @@ import org.springframework.boot.configurationprocessor.metadata.ConfigurationMet
 import org.springframework.boot.configurationprocessor.metadata.ItemHint;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
 import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
-
-
+import org.springframework.util.Base64Utils;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -64,11 +66,12 @@ import static org.springframework.boot.configurationprocessor.metadata.ItemHint.
  *
  * @author Eric Bottard
  * @author David Turanski
+ * @author Christian Tzolov
  */
 @Mojo(
-	name = "aggregate-metadata",
-	requiresDependencyResolution = ResolutionScope.RUNTIME,
-	defaultPhase = LifecyclePhase.COMPILE
+		name = "aggregate-metadata",
+		requiresDependencyResolution = ResolutionScope.RUNTIME,
+		defaultPhase = LifecyclePhase.COMPILE
 )
 public class MetadataAggregationMojo extends AbstractMojo {
 
@@ -87,12 +90,51 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	@Component
 	private MavenProjectHelper projectHelper;
 
+	@Parameter
+	private boolean storeFilteredMetadata;
+
+	@Parameter
+	private MetadataFilter metadataFilter;
+
 	private final JsonMarshaller jsonMarshaller = new JsonMarshaller();
 
-	public void execute() throws MojoExecutionException {
-		Result result = gatherMetadata();
+	public static class MetadataFilter {
+		private List<String> names;
+		private List<String> sourceTypes;
 
+		public List<String> getNames() {
+			return names;
+		}
+
+		public void setNames(List<String> names) {
+			this.names = names;
+		}
+
+		public List<String> getSourceTypes() {
+			return sourceTypes;
+		}
+
+		public void setSourceTypes(List<String> sourceTypes) {
+			this.sourceTypes = sourceTypes;
+		}
+
+		@Override
+		public String toString() {
+			return "MetadataFilter{" +
+					"name=" + names +
+					", sourceType=" + sourceTypes +
+					'}';
+		}
+	}
+
+	public void execute() throws MojoExecutionException {
+		Result result = new Result(gatherConfigurationMetadata(null), gatherWhiteListMetadata());
 		produceArtifact(result);
+
+		if (storeFilteredMetadata) {
+			getLog().debug("propertyClassFilter: " + metadataFilter);
+			storeFilteredMetadata();
+		}
 	}
 
 	/**
@@ -112,24 +154,40 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	}
 
 	/**
+	 *
+	 * Store pre-filtered and base64 encoded data into a property file.
+	 */
+	private void storeFilteredMetadata() throws MojoExecutionException {
+		File targetFolder = new File(mavenProject.getBuild().getOutputDirectory(), "META-INF");
+		if (!targetFolder.exists()) {
+			targetFolder.mkdir();
+		}
+		try (FileWriter fileWriter = new FileWriter(new File(targetFolder, "spring-configuration-metadata-encoded.properties"))) {
+			ConfigurationMetadata metadata = gatherConfigurationMetadata(metadataFilter);
+			byte[] metadataBase64Encoded = Base64Utils.encode(toByteArray(metadata));
+			fileWriter.write("spring.configuration.metadata.encoded=" + new String(metadataBase64Encoded));
+		}
+		catch (IOException e) {
+			throw new MojoExecutionException("Error creating file ", e);
+		}
+
+	}
+
+	private byte[] toByteArray(ConfigurationMetadata metadata) throws IOException {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		jsonMarshaller.write(metadata, baos);
+		return baos.toByteArray();
+	}
+
+	/**
 	 * Read all existing metadata from this project runtime dependencies and merge them in a single object.
 	 */
-	/*default*/ Result gatherMetadata() throws MojoExecutionException {
-		ConfigurationMetadata metadata = new ConfigurationMetadata();
+	/*default*/ Properties gatherWhiteListMetadata() throws MojoExecutionException {
 		Properties whiteList = new Properties();
 		try {
 			for (String path : mavenProject.getRuntimeClasspathElements()) {
 				File file = new File(path);
 				if (file.isDirectory()) {
-					File localMetadata = new File(file, METADATA_PATH);
-					if (localMetadata.canRead()) {
-						try (InputStream is = new FileInputStream(localMetadata)) {
-							ConfigurationMetadata depMetadata = jsonMarshaller.read(is);
-							getLog().debug("Merging metadata from " + path);
-							addEnumHints(depMetadata, getClassLoader(path));
-							metadata.merge(depMetadata);
-						}
-					}
 					File localWhiteList = new File(file, WHITELIST_PATH);
 					if (localWhiteList.canRead()) {
 						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
@@ -143,16 +201,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 				}
 				else {
 					try (ZipFile zipFile = new ZipFile(file)) {
-						ZipEntry entry = zipFile.getEntry(METADATA_PATH);
-						if (entry != null) {
-							try (InputStream inputStream = zipFile.getInputStream(entry)) {
-								ConfigurationMetadata depMetadata = jsonMarshaller.read(inputStream);
-								getLog().debug("Merging metadata from " + path);
-								addEnumHints(depMetadata, getClassLoader(path));
-								metadata.merge(depMetadata);
-							}
-						}
-						entry = zipFile.getEntry(WHITELIST_PATH);
+
+						ZipEntry entry = zipFile.getEntry(WHITELIST_PATH);
 						if (entry != null) {
 							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
 						}
@@ -169,7 +219,85 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
-		return new Result(metadata, whiteList);
+		return whiteList;
+	}
+
+	/*default*/ ConfigurationMetadata gatherConfigurationMetadata(MetadataFilter metadataFilters) throws MojoExecutionException {
+		ConfigurationMetadata metadata = new ConfigurationMetadata();
+		try {
+			for (String path : mavenProject.getRuntimeClasspathElements()) {
+				File file = new File(path);
+				if (file.isDirectory()) {
+					File localMetadata = new File(file, METADATA_PATH);
+					if (localMetadata.canRead()) {
+						try (InputStream is = new FileInputStream(localMetadata)) {
+							ConfigurationMetadata depMetadata = jsonMarshaller.read(is);
+							depMetadata = filterMetadata(depMetadata, metadataFilters);
+							getLog().debug("Merging metadata from " + path);
+							addEnumHints(depMetadata, getClassLoader(path));
+							metadata.merge(depMetadata);
+						}
+					}
+				}
+				else {
+					try (ZipFile zipFile = new ZipFile(file)) {
+						ZipEntry entry = zipFile.getEntry(METADATA_PATH);
+						if (entry != null) {
+							try (InputStream inputStream = zipFile.getInputStream(entry)) {
+								ConfigurationMetadata depMetadata = jsonMarshaller.read(inputStream);
+								depMetadata = filterMetadata(depMetadata, metadataFilters);
+								getLog().debug("Merging metadata from " + path);
+								addEnumHints(depMetadata, getClassLoader(path));
+								metadata.merge(depMetadata);
+							}
+						}
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
+		}
+		return metadata;
+	}
+
+	@SuppressWarnings("unchecked")
+	private ConfigurationMetadata filterMetadata(ConfigurationMetadata metadata, MetadataFilter metadataFilters) {
+		if (metadataFilters == null
+				|| (CollectionUtils.isEmpty(metadataFilters.getNames()) && CollectionUtils.isEmpty(metadataFilters.getSourceTypes()))) {
+			return metadata; // nothing to filter by so take all;
+		}
+
+		List<String> sourceTypeFilters = CollectionUtils.isEmpty(metadataFilters.getSourceTypes()) ?
+				Collections.EMPTY_LIST : metadataFilters.getSourceTypes();
+
+		List<String> nameFilters = CollectionUtils.isEmpty(metadataFilters.getNames()) ?
+				Collections.EMPTY_LIST : metadataFilters.getNames();
+
+		ConfigurationMetadata filteredMetadata = new ConfigurationMetadata();
+		List<String> whitelistedNames = new ArrayList<>();
+		for (ItemMetadata itemMetadata : metadata.getItems()) {
+			String metadataName = itemMetadata.getName();
+			String metadataSourceType = itemMetadata.getSourceType();
+			if (StringUtils.hasText(metadataSourceType) && sourceTypeFilters.contains(metadataSourceType.trim())) {
+				filteredMetadata.add(itemMetadata);
+				whitelistedNames.add(itemMetadata.getName());
+			}
+			if (StringUtils.hasText(metadataName) && nameFilters.contains(metadataName.trim())) {
+				filteredMetadata.add(itemMetadata);
+				whitelistedNames.add(itemMetadata.getName());
+			}
+
+		}
+
+		// copy the hits only for the whitelisted metadata.
+		for (ItemHint itemHint : metadata.getHints()) {
+			if (itemHint != null && whitelistedNames.contains(itemHint.getName())) {
+				filteredMetadata.add(itemHint);
+			}
+		}
+
+		return filteredMetadata;
 	}
 
 	private Properties getWhitelistFromZipFile(Properties whiteList, String path, ZipFile zipFile, ZipEntry entry) throws IOException {
@@ -194,8 +322,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 		if (!mergedProperties.containsKey(CONFIGURATION_PROPERTIES_CLASSES) && !mergedProperties.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
 			getLog().warn(String.format("Whitelist properties does not contain any required keys: %s",
-				StringUtils.arrayToCommaDelimitedString(new String[] {CONFIGURATION_PROPERTIES_CLASSES,
-					CONFIGURATION_PROPERTIES_NAMES})));
+					StringUtils.arrayToCommaDelimitedString(new String[] { CONFIGURATION_PROPERTIES_CLASSES,
+							CONFIGURATION_PROPERTIES_NAMES })));
 			return whitelist;
 		}
 
@@ -272,7 +400,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						//Equals is not correct for ValueProvider
 
 						boolean found = false;
-						for (ValueProvider valueProvider: providers.get(property.getType())) {
+						for (ValueProvider valueProvider : providers.get(property.getType())) {
 							if (valueProvider.getName().equals(property.getType())) {
 								found = true;
 							}
@@ -283,7 +411,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						}
 
 						itemHints.put(property.getType(), new ItemHint(property.getName(), valueHints,
-							new ArrayList<>(providers.get(property.getType()))));
+								new ArrayList<>(providers.get(property.getType()))));
 
 					}
 				}
@@ -298,13 +426,12 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	private ClassLoader getClassLoader(String jarPath) {
 		ClassLoader classLoader = null;
 		try {
-			classLoader = new URLClassLoader(new URL[]{new URL("file://" + jarPath)},
-				this.getClass().getClassLoader());
+			classLoader = new URLClassLoader(new URL[] { new URL("file://" + jarPath) },
+					this.getClass().getClassLoader());
 		}
 		catch (MalformedURLException e) {
-
-		};
+			// pass through
+		}
 		return classLoader;
 	}
-
 }
