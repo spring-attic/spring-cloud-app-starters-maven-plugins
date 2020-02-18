@@ -84,6 +84,7 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 		// BOM
 		setMojoProperty("bootVersion", "2.3.0.M1");
+		setMojoProperty("appMetadataMavenPluginVersion", "1.0.2.BUILD-SNAPSHOT");
 
 		//setMojoProperty("generatedProjectHome", "./target/apps");
 		setMojoProperty("generatedProjectHome", projectHome.getRoot().getAbsolutePath());
@@ -128,7 +129,7 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 		Model pomModel = getModel(rootPath);
 
 		List<Dependency> dependencies = pomModel.getDependencies();
-		assertThat(dependencies.size()).isEqualTo(2);
+		assertThat(dependencies.size()).isEqualTo(3);
 
 		assertThat(dependencies.stream()
 				.filter(d -> d.getArtifactId().equals("log-consumer")).count()).isEqualTo(1);

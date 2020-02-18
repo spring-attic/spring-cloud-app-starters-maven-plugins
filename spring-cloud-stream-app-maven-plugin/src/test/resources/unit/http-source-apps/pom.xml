@@ -10,17 +10,11 @@
 	<description>http source apps</description>
 	<packaging>jar</packaging>
 
-	<!--	<parent>-->
-	<!--		<groupId>org.springframework.cloud.stream.app</groupId>-->
-	<!--		<artifactId>stream-apps-parent</artifactId>-->
-	<!--		<version>3.0.0.BUILD-SNAPSHOT</version>-->
-	<!--		<relativePath/>-->
-	<!--	</parent>-->
-
 	<properties>
 		<spring-boot.version>2.3.0.M1</spring-boot.version>
 		<stream-apps-core.version>3.0.0.BUILD-SNAPSHOT</stream-apps-core.version>
 		<java-cfenv-boot.version>2.1.1.RELEASE</java-cfenv-boot.version>
+		<app-metadata-maven-plugin-version>1.0.2.BUILD-SNAPSHOT</app-metadata-maven-plugin-version>
 
 		<!-- Emulate the properties that otherwise should come from the stream-apps-parent parent -->
 		<java-functions.version>1.0.0.BUILD-SNAPSHOT</java-functions.version>

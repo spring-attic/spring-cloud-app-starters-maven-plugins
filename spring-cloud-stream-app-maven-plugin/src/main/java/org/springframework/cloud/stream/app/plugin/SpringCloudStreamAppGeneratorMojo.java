@@ -92,13 +92,15 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	@Parameter(defaultValue = "2.2.4.RELEASE", required = true)
 	private String bootVersion;
 
-	@Parameter(required = true)
-	private String streamAppsParentVersion; //core 3.0.0.BUILD-SNAPSHOT
+	@Parameter(defaultValue = "${app-metadata-maven-plugin-version}")
+	private String appMetadataMavenPluginVersion;
 
 	@Override
 	public void execute() throws MojoFailureException {
 		// Bom
-		AppBom appBom = new AppBom().withSpringBootVersion(this.bootVersion);
+		AppBom appBom = new AppBom()
+				.withSpringBootVersion(this.bootVersion)
+				.withAppMetadataMavenPluginVersion(this.appMetadataMavenPluginVersion);
 
 		// Application project definition
 		// FIXME assumes a single appNameType definition!!! is this correct? If so shouldn't we simplify the configuration format?

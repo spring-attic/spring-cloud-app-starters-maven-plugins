@@ -50,6 +50,11 @@
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-{{app-binder}}</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<repositories>
@@ -118,8 +123,7 @@
 						<format>Docker</format>
 						{{#app.enableContainerImageMetadata}}
 						<labels>
-							<spring.configuration.metadata>${spring.configuration.metadata.encoded}
-							</spring.configuration.metadata>
+							<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>
 						</labels>
 						{{/app.enableContainerImageMetadata}}
 					</container>
@@ -156,7 +160,7 @@
 			<plugin>
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
-				<version>1.0.2.BUILD-SNAPSHOT</version>
+				<version>{{bom.appMetadataMavenPluginVersion}}</version>
 				<configuration>
 					{{#app.enableContainerImageMetadata}}
 					<storeFilteredMetadata>true</storeFilteredMetadata>

@@ -24,6 +24,8 @@ public class AppBom {
 	 */
 	private String springBootVersion;
 
+	private String appMetadataMavenPluginVersion;
+
 
 	public String getSpringBootVersion() {
 		return springBootVersion;
@@ -37,4 +39,18 @@ public class AppBom {
 		this.springBootVersion = springBootVersion;
 		return this;
 	}
+
+	public String getAppMetadataMavenPluginVersion() {
+		return appMetadataMavenPluginVersion;
+	}
+
+	public void setAppMetadataMavenPluginVersion(String appMetadataMavenPluginVersion) {
+		this.appMetadataMavenPluginVersion = appMetadataMavenPluginVersion;
+	}
+
+	public AppBom withAppMetadataMavenPluginVersion(String appMetadataMavenPluginVersion) {
+		this.appMetadataMavenPluginVersion = appMetadataMavenPluginVersion;
+		return this;
+	}
+
 }
