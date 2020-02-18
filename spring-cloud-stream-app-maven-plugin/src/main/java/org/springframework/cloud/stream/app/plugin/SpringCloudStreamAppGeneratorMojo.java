@@ -19,11 +19,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import javafx.util.Pair;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
@@ -59,7 +57,10 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	private String generatedProjectVersion; // "3.0.0.BUILD-SNAPSHOT"
 
 	@Parameter(required = true)
-	private Map<String, String> generatedApps; // TODO remove GeneratableApp and make it a list
+	private String generatedAppName;
+
+	@Parameter(required = true)
+	private AppDefinition.AppType generatedAppType;
 
 	@Parameter(required = true)
 	String configClass;
@@ -102,14 +103,9 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 				.withSpringBootVersion(this.bootVersion)
 				.withAppMetadataMavenPluginVersion(this.appMetadataMavenPluginVersion);
 
-		// Application project definition
-		// FIXME assumes a single appNameType definition!!! is this correct? If so shouldn't we simplify the configuration format?
-		String appNameAndTypeCombined = generatedApps.entrySet().iterator().next().getKey();
-		Pair<String, AppDefinition.AppType> appNameType = this.extractApplicationNameAndType(appNameAndTypeCombined);
-
 		AppDefinition app = new AppDefinition();
-		app.setName(appNameType.getKey());
-		app.setType(appNameType.getValue());
+		app.setName(this.generatedAppName);
+		app.setType(this.generatedAppType);
 		app.setVersion(this.generatedProjectVersion);
 		app.setFunctionClass(this.configClass);
 		app.setContainerImageFormat(this.containerImageFormat);
@@ -154,29 +150,6 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		}
 		catch (IOException e) {
 			throw new MojoFailureException("Project generation failure");
-		}
-	}
-
-	/**
-	 * Converts 'app-name-type' into 'app-name' as key
-	 * and {@link org.springframework.cloud.stream.app.plugin.generator.AppDefinition.AppType}
-	 * (e.g. source, processor, sink) as a value.
-	 * @param applicationAndTypeName Application and Name expression defined in the POM.
-	 */
-	Pair<String, AppDefinition.AppType> extractApplicationNameAndType(String applicationAndTypeName) throws MojoFailureException {
-		int index = applicationAndTypeName.lastIndexOf("-");
-		if (index < 0) {
-			throw new MojoFailureException("Invalid application <name>-<type> format:" + applicationAndTypeName);
-		}
-		String appNamePrefix = applicationAndTypeName.substring(0, index).trim();
-		String appTypeSuffix = applicationAndTypeName.substring(index + 1).trim();
-		try {
-			AppDefinition.AppType appType = AppDefinition.AppType.valueOf(appTypeSuffix);
-			return new Pair(appNamePrefix, appType);
-		}
-		catch (IllegalArgumentException iae) {
-			throw new MojoFailureException(String.format("Invalid application type: %s . " +
-					"Only source, processor, sink types are allowed!", appTypeSuffix));
 		}
 	}
 }

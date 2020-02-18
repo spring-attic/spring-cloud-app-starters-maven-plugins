@@ -61,9 +61,8 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 		setMojoProperty("generatedProjectVersion", "3.0.0.BUILD-SNAPSHOT");
 		setMojoProperty("configClass", "io.pivotal.java.function.log.consumer.LogConsumerConfiguration.class");
 
-		Map<String, String> generatedApps = new HashMap<>();
-		generatedApps.put("log-sink", "");
-		setMojoProperty("generatedApps", generatedApps);
+		setMojoProperty("generatedAppName", "log");
+		setMojoProperty("generatedAppType", AppDefinition.AppType.sink);
 
 		setMojoProperty("metadataSourceTypeFilters", Arrays.asList("io.pivotal.java.function.log.consumer.LogConsumerProperties"));
 		setMojoProperty("metadataNameFilters", Arrays.asList("server.port"));
