@@ -42,6 +42,10 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.version>3.6.3</maven.version>
+    <maven.plugin.version>3.6.0</maven.plugin.version>
+    <jmustache.version>1.15</jmustache.version>
+    <sprign.version>5.2.3.RELEASE</sprign.version>
   </properties>
 
   <scm>
@@ -62,58 +66,71 @@
         <role>Developer</role>
       </roles>
     </developer>
+    <developer>
+      <id>tzolov</id>
+      <name>Christian Tzolov</name>
+      <email>ctzolov at pivotal.io</email>
+      <organization>Pivotal Software, Inc.</organization>
+      <organizationUrl>http://www.spring.io</organizationUrl>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
   </developers>
 
   <dependencies>
-
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-      <version>1.7.19</version>
+      <groupId>com.samskivert</groupId>
+      <artifactId>jmustache</artifactId>
+      <version>${jmustache.version}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-model</artifactId>
-      <version>2.2.1</version>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${sprign.version}</version>
     </dependency>
 
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.4</version>
-    </dependency>
-
-    <dependency>
-      <groupId>io.spring.initializr</groupId>
-      <artifactId>initializr-generator</artifactId>
-      <version>0.1.0.RELEASE</version>
-    </dependency>
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <version>2.0</version>
+      <scope>provided</scope>
+      <version>${maven.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${maven.version}</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
-      <version>3.2</version>
+      <version>${maven.plugin.version}</version>
       <scope>provided</scope>
     </dependency>
-    <dependency>
-      <groupId>org.codehaus.plexus</groupId>
-      <artifactId>plexus-utils</artifactId>
-      <version>3.0.8</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.maven</groupId>
-      <artifactId>maven-project</artifactId>
-      <version>2.0.6</version>
-    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.8.2</version>
+      <version>4.13</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven.plugin-testing</groupId>
+      <artifactId>maven-plugin-testing-harness</artifactId>
+      <version>3.3.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-compat</artifactId>
+      <version>${maven.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>3.15.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -123,7 +140,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
-        <version>3.3</version>
+        <version>${maven.plugin.version}</version>
         <configuration>
           <goalPrefix>scs</goalPrefix>
           <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
@@ -171,12 +188,11 @@
     <profile>
       <id>run-its</id>
       <build>
-
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-invoker-plugin</artifactId>
-            <version>1.7</version>
+            <version>3.2.1</version>
             <configuration>
               <debug>true</debug>
               <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>

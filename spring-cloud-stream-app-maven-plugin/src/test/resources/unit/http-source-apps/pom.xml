@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>org.springframework.cloud.stream.app</groupId>
+	<artifactId>http-source-apps</artifactId>
+	<version>3.0.0.BUILD-SNAPSHOT</version>
+	<name>http-source-apps</name>
+	<description>http source apps</description>
+	<packaging>jar</packaging>
+
+	<!--	<parent>-->
+	<!--		<groupId>org.springframework.cloud.stream.app</groupId>-->
+	<!--		<artifactId>stream-apps-parent</artifactId>-->
+	<!--		<version>3.0.0.BUILD-SNAPSHOT</version>-->
+	<!--		<relativePath/>-->
+	<!--	</parent>-->
+
+	<properties>
+		<!-- Emulate the properties that otherwise should come from the stream-apps-parent parent -->
+		<java-functions.version>1.0.0.BUILD-SNAPSHOT</java-functions.version>
+		<spring-cloud-dependencies.version>Hoxton.RELEASE</spring-cloud-dependencies.version>
+		<spring-cloud-stream-dependencies.version>Horsham.SR2</spring-cloud-stream-dependencies.version>
+		<spring-cloud-function-dependencies.version>3.0.2.RELEASE</spring-cloud-function-dependencies.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
+				<artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
+				<version>2.0.0.BUILD-SNAPSHOT</version>
+
+				<configuration>
+					<enableContainerImageMetadata>true</enableContainerImageMetadata>
+
+					<appsFolder>./target/apps</appsFolder>
+
+					<!-- BOM -->
+					<bootVersion>2.3.0.M1</bootVersion>
+					<streamAppsParentVersion>3.0.0.BUILD-SNAPSHOT</streamAppsParentVersion>
+					<springCloudStreamDependenciesVersion>${spring-cloud-stream-dependencies.version}</springCloudStreamDependenciesVersion>
+					<springCloudFunctionDependenciesVersion>${spring-cloud-function-dependencies.version}</springCloudFunctionDependenciesVersion>
+					<springCloudDependenciesVersion>${spring-cloud-dependencies.version}</springCloudDependenciesVersion>
+
+					<generatedProjectVersion>${project.version}</generatedProjectVersion>
+					<configClass>io.pivotal.java.function.http.supplier.HttpSupplierConfiguration.class</configClass>
+
+					<dependencies>
+						<dependency>
+							<groupId>io.pivotal.java.function</groupId>
+							<artifactId>http-supplier</artifactId>
+							<version>${java-functions.version}</version>
+						</dependency>
+					</dependencies>
+
+					<generatedApps>
+						<http-source/>
+					</generatedApps>
+
+					<additionalAppProperties>
+						<additionalAppProperty>spring.main.web-application-type=reactive</additionalAppProperty>
+						<additionalAppPropertiy>spring.cloud.streamapp.security.enabled=false</additionalAppPropertiy>
+						<additionalAppProperty>spring.cloud.streamapp.security.csrf-enabled=false</additionalAppProperty>
+					</additionalAppProperties>
+
+					<metadataSourceTypeFilters>
+						<filter>io.pivotal.java.function.http.supplier.HttpSourceProperties</filter>
+						<filter>io.pivotal.java.function.http.supplier.HttpSourceProperties$Cors</filter>
+					</metadataSourceTypeFilters>
+
+					<metadataNameFilters>
+						<filter>server.port</filter>
+					</metadataNameFilters>
+
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
+
+</project>
