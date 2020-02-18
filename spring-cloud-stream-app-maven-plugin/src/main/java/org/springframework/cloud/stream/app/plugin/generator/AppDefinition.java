@@ -39,9 +39,11 @@ public class AppDefinition {
 
 	private List<String> additionalProperties = new ArrayList<>();
 
-	private List<String> additionalMavenDependencies = new ArrayList<>();
+	private List<String> mavenManagedDependencies = new ArrayList<>();
 
-	private List<String> additionalMavenPlugins = new ArrayList<>();
+	private List<String> mavenDependencies = new ArrayList<>();
+
+	private List<String> mavenPlugins = new ArrayList<>();
 
 	private String functionClass;
 
@@ -84,16 +86,28 @@ public class AppDefinition {
 		this.additionalProperties = additionalProperties;
 	}
 
-	public List<String> getAdditionalMavenDependencies() {
-		return additionalMavenDependencies;
+	public List<String> getMavenDependencies() {
+		return mavenDependencies;
 	}
 
-	public List<String> getAdditionalMavenPlugins() {
-		return additionalMavenPlugins;
+	public void setMavenDependencies(List<String> mavenDependencies) {
+		this.mavenDependencies = mavenDependencies;
 	}
 
-	public void setAdditionalMavenPlugins(List<String> additionalMavenPlugins) {
-		this.additionalMavenPlugins = additionalMavenPlugins;
+	public List<String> getMavenManagedDependencies() {
+		return mavenManagedDependencies;
+	}
+
+	public void setMavenManagedDependencies(List<String> mavenManagedDependencies) {
+		this.mavenManagedDependencies = mavenManagedDependencies;
+	}
+
+	public List<String> getMavenPlugins() {
+		return mavenPlugins;
+	}
+
+	public void setMavenPlugins(List<String> mavenPlugins) {
+		this.mavenPlugins = mavenPlugins;
 	}
 
 	public boolean isSupplier() {
@@ -108,9 +122,6 @@ public class AppDefinition {
 		return type == AppType.processor;
 	}
 
-	public void setAdditionalMavenDependencies(List<String> additionalMavenDependencies) {
-		this.additionalMavenDependencies = additionalMavenDependencies;
-	}
 
 	public String getFunctionClass() {
 		return functionClass;

@@ -16,6 +16,7 @@
 package org.springframework.cloud.stream.app.plugin.generator;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * @author Christian Tzolov
@@ -41,6 +42,11 @@ public class ProjectGeneratorProperties {
 	 * If set to true will remove the previously generated apps.
 	 */
 	private boolean overrideAllowed = false;
+
+	/**
+	 * List of binders to generate applications for.
+	 */
+	private List<String> binders;
 
 	public File getOutputFolder() {
 		return outputFolder;
@@ -72,5 +78,13 @@ public class ProjectGeneratorProperties {
 
 	public void setOverrideAllowed(boolean overrideAllowed) {
 		this.overrideAllowed = overrideAllowed;
+	}
+
+	public List<String> getBinders() {
+		return binders;
+	}
+
+	public void setBinders(List<String> binders) {
+		this.binders = binders;
 	}
 }

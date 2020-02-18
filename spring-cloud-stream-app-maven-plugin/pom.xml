@@ -142,7 +142,7 @@
         <artifactId>maven-plugin-plugin</artifactId>
         <version>${maven.plugin.version}</version>
         <configuration>
-          <goalPrefix>scs</goalPrefix>
+          <goalPrefix>generate-app</goalPrefix>
           <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
         </configuration>
         <executions>

@@ -80,15 +80,13 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 		setMojoProperty("containerImageFormat", AppDefinition.ContainerImageFormat.Docker);
 
+		setMojoProperty("binders", Arrays.asList("kafka", "rabbit"));
+
 		// BOM
 		setMojoProperty("bootVersion", "2.3.0.M1");
-		setMojoProperty("streamAppsParentVersion", "3.0.0.BUILD-SNAPSHOT");
-		setMojoProperty("springCloudStreamDependenciesVersion", "Horsham.SR2");
-		setMojoProperty("springCloudFunctionDependenciesVersion", "3.0.2.RELEASE");
-		setMojoProperty("springCloudDependenciesVersion", "Hoxton.RELEASE");
 
-		//setMojoProperty("appsFolder", "./target/apps");
-		setMojoProperty("appsFolder", projectHome.getRoot().getAbsolutePath());
+		//setMojoProperty("generatedProjectHome", "./target/apps");
+		setMojoProperty("generatedProjectHome", projectHome.getRoot().getAbsolutePath());
 	}
 
 	@Test
@@ -99,6 +97,7 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 		this.springCloudStreamAppMojo.execute();
 
+		//Model pomModel = getModel(new File("./target/apps"));
 		Model pomModel = getModel(new File(projectHome.getRoot().getAbsolutePath()));
 		List<Plugin> plugins = pomModel.getBuild().getPlugins();
 
@@ -129,13 +128,13 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 		Model pomModel = getModel(rootPath);
 
 		List<Dependency> dependencies = pomModel.getDependencies();
-		assertThat(dependencies.size()).isEqualTo(15);
+		assertThat(dependencies.size()).isEqualTo(2);
 
 		assertThat(dependencies.stream()
-				.filter(d -> d.getArtifactId().equals("log-consumer")).count()).isEqualTo(1L);
+				.filter(d -> d.getArtifactId().equals("log-consumer")).count()).isEqualTo(1);
 
 		assertThat(dependencies.stream()
-				.filter(d -> d.getArtifactId().equals("spring-cloud-starter-stream-kafka")).count()).isEqualTo(1L);
+				.filter(d -> d.getArtifactId().equals("spring-cloud-stream-binder-kafka")).count()).isEqualTo(1);
 
 		Parent parent = pomModel.getParent();
 		assertThat(parent.getArtifactId()).isEqualTo("spring-boot-starter-parent");

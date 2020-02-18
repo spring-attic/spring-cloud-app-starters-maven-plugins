@@ -62,13 +62,13 @@ public class MojoHarnessTest {
 		Model pomModel = getModel(new File("./target/apps"));
 
 		List<Dependency> dependencies = pomModel.getDependencies();
-		assertThat(dependencies.size()).isEqualTo(15);
+		assertThat(dependencies.size()).isEqualTo(14);
 
 		assertThat(dependencies.stream()
 				.filter(d -> d.getArtifactId().equals("http-supplier")).count()).isEqualTo(1);
 
 		assertThat(dependencies.stream()
-				.filter(d -> d.getArtifactId().equals("spring-cloud-starter-stream-kafka")).count()).isEqualTo(1);
+				.filter(d -> d.getArtifactId().equals("spring-cloud-stream-binder-kafka")).count()).isEqualTo(1);
 
 		Parent parent = pomModel.getParent();
 		assertThat(parent.getArtifactId()).isEqualTo("spring-boot-starter-parent");

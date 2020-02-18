@@ -30,6 +30,8 @@ import java.util.Objects;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 
+import org.springframework.util.Assert;
+
 /**
  * @author Christian Tzolov
  */
@@ -38,12 +40,7 @@ public class ProjectGenerator {
 	public static void main(String[] args) throws IOException {
 
 		// Bom
-		AppBom appBom = new AppBom()
-				.withSpringBootVersion("2.3.0.M1")
-				.withStreamAppsParentVersion("3.0.0.BUILD-SNAPSHOT")
-				.withSpringCloudStreamDependenciesVersion("Horsham.SR2")
-				.withSpringCloudFunctionDependenciesVersion("3.0.2.RELEASE")
-				.withSpringCloudDependenciesVersion("Hoxton.RELEASE");
+		AppBom appBom = new AppBom().withSpringBootVersion("2.3.0.M1");
 
 		// App
 		AppDefinition app = new AppDefinition();
@@ -56,7 +53,7 @@ public class ProjectGenerator {
 		//		"spring.cloud.streamapp.security.enabled=false",
 		//		"spring.cloud.streamapp.security.csrf-enabled=false"));
 
-		app.getAdditionalMavenDependencies().add("<dependency>\n" +
+		app.getMavenDependencies().add("<dependency>\n" +
 				"      <groupId>io.pivotal.java.function</groupId>\n" +
 				"      <artifactId>log-consumer</artifactId>\n" +
 				"      <version>1.0.0.BUILD-SNAPSHOT</version>\n" +
@@ -96,6 +93,7 @@ public class ProjectGenerator {
 		Map<String, Object> containerTemplateProperties = createContainerTemplateProperties();
 		containerTemplateProperties.put("bom", generatorProperties.getAppBom());
 		containerTemplateProperties.put("app", generatorProperties.getAppDefinition());
+		containerTemplateProperties.put("binders", generatorProperties.getBinders());
 
 		// ---------------------------------
 		// Generate apps container POM
@@ -111,10 +109,11 @@ public class ProjectGenerator {
 		// ---------------------------------
 		// Generate App projects
 		// ---------------------------------
-		generateAppProject(appParentDir, containerTemplateProperties,
-				generatorProperties.getAppDefinition(), "kafka");
-		generateAppProject(appParentDir, containerTemplateProperties,
-				generatorProperties.getAppDefinition(), "rabbit");
+		Assert.notEmpty(generatorProperties.getBinders(), "At least one Binder must be provided");
+		for (String binder : generatorProperties.getBinders()) {
+			generateAppProject(appParentDir, containerTemplateProperties,
+					generatorProperties.getAppDefinition(), binder);
+		}
 	}
 
 	private Map<String, Object> createContainerTemplateProperties() {

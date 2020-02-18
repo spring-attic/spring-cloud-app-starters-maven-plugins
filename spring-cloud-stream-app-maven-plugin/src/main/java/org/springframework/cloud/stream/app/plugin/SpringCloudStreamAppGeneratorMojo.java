@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import javafx.util.Pair;
@@ -35,7 +36,6 @@ import org.springframework.cloud.stream.app.plugin.generator.AppBom;
 import org.springframework.cloud.stream.app.plugin.generator.AppDefinition;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGenerator;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGeneratorProperties;
-import org.springframework.util.CollectionUtils;
 
 /**
  * @author Christian Tzolov
@@ -53,7 +53,7 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	private boolean enableContainerImageMetadata;
 
 	@Parameter(defaultValue = "./apps", required = true)
-	private String appsFolder;
+	private String generatedProjectHome;
 
 	@Parameter(required = true)
 	private String generatedProjectVersion; // "3.0.0.BUILD-SNAPSHOT"
@@ -74,10 +74,19 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	List<String> metadataNameFilters;
 
 	@Parameter
+	List<Dependency> boms = new ArrayList<>();
+
+	@Parameter
 	List<Dependency> dependencies = new ArrayList<>();
 
 	@Parameter
+	List<Dependency> globalDependencies = new ArrayList<>();
+
+	@Parameter
 	List<Plugin> additionalPlugins = new ArrayList<>();
+
+	@Parameter
+	List<String> binders = new ArrayList<>();
 
 	// Versions
 	@Parameter(defaultValue = "2.2.4.RELEASE", required = true)
@@ -86,24 +95,10 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	@Parameter(required = true)
 	private String streamAppsParentVersion; //core 3.0.0.BUILD-SNAPSHOT
 
-	@Parameter(defaultValue = "${spring-cloud-stream-dependencies.version}", required = true)
-	private String springCloudStreamDependenciesVersion; // Horsham.SR2
-
-	@Parameter(defaultValue = "${spring-cloud-function-dependencies.version}", required = true)
-	private String springCloudFunctionDependenciesVersion; // 3.0.2.RELEASE
-
-	@Parameter(defaultValue = "${spring-cloud-dependencies.version}", required = true)
-	private String springCloudDependenciesVersion; // Hoxton.RELEASE
-
 	@Override
 	public void execute() throws MojoFailureException {
 		// Bom
-		AppBom appBom = new AppBom()
-				.withSpringBootVersion(this.bootVersion)
-				.withStreamAppsParentVersion(this.streamAppsParentVersion) // SCSt apps Core version
-				.withSpringCloudStreamDependenciesVersion(this.springCloudStreamDependenciesVersion)
-				.withSpringCloudFunctionDependenciesVersion(this.springCloudFunctionDependenciesVersion)
-				.withSpringCloudDependenciesVersion(this.springCloudDependenciesVersion);
+		AppBom appBom = new AppBom().withSpringBootVersion(this.bootVersion);
 
 		// Application project definition
 		// FIXME assumes a single appNameType definition!!! is this correct? If so shouldn't we simplify the configuration format?
@@ -123,17 +118,32 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
 		app.setAdditionalProperties(this.additionalAppProperties);
 
+		// BOM
+		app.setMavenManagedDependencies(this.boms.stream()
+				.filter(Objects::nonNull)
+				.map(dependency -> {
+							dependency.setScope("import");
+							dependency.setType("pom");
+							return dependency;
+						}
+				)
+				.map(MavenXmlWriter::toXml)
+				.collect(Collectors.toList()));
+
+		// Dependencies
 		List<String> stringDependencies = this.dependencies.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
-		app.setAdditionalMavenDependencies(stringDependencies);
+		List<String> stringGlobalDependencies = this.globalDependencies.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
+		stringDependencies.addAll(stringGlobalDependencies);
+		app.setMavenDependencies(stringDependencies);
 
 		List<String> plugins = this.additionalPlugins.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
-		app.setAdditionalMavenPlugins(plugins);
-
+		app.setMavenPlugins(plugins);
 
 		// Generator Properties
 		ProjectGeneratorProperties generatorProperties = new ProjectGeneratorProperties();
+		generatorProperties.setBinders(this.binders);
 		generatorProperties.setOverrideAllowed(true);
-		generatorProperties.setOutputFolder(new File(this.appsFolder));
+		generatorProperties.setOutputFolder(new File(this.generatedProjectHome));
 		generatorProperties.setAppBom(appBom);
 		generatorProperties.setAppDefinition(app);
 

@@ -24,25 +24,6 @@ public class AppBom {
 	 */
 	private String springBootVersion;
 
-	/**
-	 * Stream apps core version
-	 */
-	private String streamAppsParentVersion;
-
-	/**
-	 * Spring Cloud Stream Dependency version.
-	 */
-	private String springCloudStreamDependenciesVersion;
-
-	/**
-	 * Spring Cloud Function Dependencies Version
-	 */
-	private String springCloudFunctionDependenciesVersion;
-
-	/**
-	 * Spring Cloud Dependencies Version
-	 */
-	private String springCloudDependenciesVersion;
 
 	public String getSpringBootVersion() {
 		return springBootVersion;
@@ -56,57 +37,4 @@ public class AppBom {
 		this.springBootVersion = springBootVersion;
 		return this;
 	}
-
-	public String getStreamAppsParentVersion() {
-		return streamAppsParentVersion;
-	}
-
-	public void setStreamAppsParentVersion(String streamAppsParentVersion) {
-		this.streamAppsParentVersion = streamAppsParentVersion;
-	}
-
-	public AppBom withStreamAppsParentVersion(String streamAppsParentVersion) {
-		this.streamAppsParentVersion = streamAppsParentVersion;
-		return this;
-	}
-
-	public String getSpringCloudStreamDependenciesVersion() {
-		return springCloudStreamDependenciesVersion;
-	}
-
-	public void setSpringCloudStreamDependenciesVersion(String springCloudStreamDependenciesVersion) {
-		this.springCloudStreamDependenciesVersion = springCloudStreamDependenciesVersion;
-	}
-
-	public AppBom withSpringCloudStreamDependenciesVersion(String springCloudStreamDependenciesVersion) {
-		this.springCloudStreamDependenciesVersion = springCloudStreamDependenciesVersion;
-		return this;
-	}
-
-	public String getSpringCloudFunctionDependenciesVersion() {
-		return springCloudFunctionDependenciesVersion;
-	}
-
-	public void setSpringCloudFunctionDependenciesVersion(String springCloudFunctionDependenciesVersion) {
-		this.springCloudFunctionDependenciesVersion = springCloudFunctionDependenciesVersion;
-	}
-
-	public AppBom withSpringCloudFunctionDependenciesVersion(String springCloudFunctionDependenciesVersion) {
-		this.springCloudFunctionDependenciesVersion = springCloudFunctionDependenciesVersion;
-		return this;
-	}
-
-	public String getSpringCloudDependenciesVersion() {
-		return springCloudDependenciesVersion;
-	}
-
-	public void setSpringCloudDependenciesVersion(String springCloudDependenciesVersion) {
-		this.springCloudDependenciesVersion = springCloudDependenciesVersion;
-	}
-
-	public AppBom withSpringCloudDependenciesVersion(String springCloudDependenciesVersion) {
-		this.springCloudDependenciesVersion = springCloudDependenciesVersion;
-		return this;
-	}
-
 }

@@ -18,6 +18,10 @@
 	<!--	</parent>-->
 
 	<properties>
+		<spring-boot.version>2.3.0.M1</spring-boot.version>
+		<stream-apps-core.version>3.0.0.BUILD-SNAPSHOT</stream-apps-core.version>
+		<java-cfenv-boot.version>2.1.1.RELEASE</java-cfenv-boot.version>
+
 		<!-- Emulate the properties that otherwise should come from the stream-apps-parent parent -->
 		<java-functions.version>1.0.0.BUILD-SNAPSHOT</java-functions.version>
 		<spring-cloud-dependencies.version>Hoxton.RELEASE</spring-cloud-dependencies.version>
@@ -26,6 +30,108 @@
 	</properties>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.springframework.cloud.stream.app.plugin</groupId>
+					<artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
+					<version>2.0.0.BUILD-SNAPSHOT</version>
+					<executions>
+						<execution>
+							<id>app-gen</id>
+							<phase>package</phase>
+							<goals>
+								<goal>generate-app</goal>
+							</goals>
+						</execution>
+					</executions>
+					<configuration>
+<!--						<generatedProjectHome>${basedir}/apps</generatedProjectHome>-->
+<!--												<javaVersion>1.8</javaVersion>-->
+						<bootVersion>${spring-boot.version}</bootVersion>
+
+						<binders>
+							<item>kafka</item>
+							<item>rabbit</item>
+						</binders>
+						<boms>
+							<dependency>
+								<groupId>org.springframework.cloud</groupId>
+								<artifactId>spring-cloud-stream-dependencies</artifactId>
+								<version>${spring-cloud-stream-dependencies.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.cloud</groupId>
+								<artifactId>spring-cloud-function-dependencies</artifactId>
+								<version>${spring-cloud-function-dependencies.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.cloud</groupId>
+								<artifactId>spring-cloud-dependencies</artifactId>
+								<version>${spring-cloud-dependencies.version}</version>
+							</dependency>
+						</boms>
+
+						<globalDependencies>
+							<dependency>
+								<groupId>org.springframework.cloud.stream.app</groupId>
+								<artifactId>stream-apps-security-common</artifactId>
+								<version>${stream-apps-core.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.cloud.stream.app</groupId>
+								<artifactId>stream-apps-micrometer-common</artifactId>
+								<version>${stream-apps-core.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>io.micrometer</groupId>
+								<artifactId>micrometer-registry-influx</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>io.micrometer</groupId>
+								<artifactId>micrometer-registry-prometheus</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>io.micrometer</groupId>
+								<artifactId>micrometer-registry-datadog</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>io.pivotal.cfenv</groupId>
+								<artifactId>java-cfenv-boot</artifactId>
+								<version>${java-cfenv-boot.version}</version>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-configuration-processor</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-starter-actuator</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-starter-web</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-starter-logging</artifactId>
+							</dependency>
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-starter-security</artifactId>
+							</dependency>
+							<!--TODO add to the real core-->
+							<dependency>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-starter-test</artifactId>
+								<scope>test</scope>
+							</dependency>
+						</globalDependencies>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
@@ -33,16 +139,11 @@
 				<version>2.0.0.BUILD-SNAPSHOT</version>
 
 				<configuration>
+					<generatedProjectHome>./target/apps</generatedProjectHome>
+
 					<enableContainerImageMetadata>true</enableContainerImageMetadata>
 
-					<appsFolder>./target/apps</appsFolder>
-
 					<!-- BOM -->
-					<bootVersion>2.3.0.M1</bootVersion>
-					<streamAppsParentVersion>3.0.0.BUILD-SNAPSHOT</streamAppsParentVersion>
-					<springCloudStreamDependenciesVersion>${spring-cloud-stream-dependencies.version}</springCloudStreamDependenciesVersion>
-					<springCloudFunctionDependenciesVersion>${spring-cloud-function-dependencies.version}</springCloudFunctionDependenciesVersion>
-					<springCloudDependenciesVersion>${spring-cloud-dependencies.version}</springCloudDependenciesVersion>
 
 					<generatedProjectVersion>${project.version}</generatedProjectVersion>
 					<configClass>io.pivotal.java.function.http.supplier.HttpSupplierConfiguration.class</configClass>
@@ -62,7 +163,8 @@
 					<additionalAppProperties>
 						<additionalAppProperty>spring.main.web-application-type=reactive</additionalAppProperty>
 						<additionalAppPropertiy>spring.cloud.streamapp.security.enabled=false</additionalAppPropertiy>
-						<additionalAppProperty>spring.cloud.streamapp.security.csrf-enabled=false</additionalAppProperty>
+						<additionalAppProperty>spring.cloud.streamapp.security.csrf-enabled=false
+						</additionalAppProperty>
 					</additionalAppProperties>
 
 					<metadataSourceTypeFilters>
@@ -76,7 +178,24 @@
 
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
+				<version>1.0.2.BUILD-SNAPSHOT</version>
+				<configuration>
+					<storeFilteredMetadata>true</storeFilteredMetadata>
 
+					<metadataFilter>
+						<names>
+							<filter>server.port</filter>
+						</names>
+						<sourceTypes>
+							<filter>io.pivotal.java.function.http.supplier.HttpSourceProperties</filter>
+							<filter>io.pivotal.java.function.http.supplier.HttpSourceProperties$Cors</filter>
+						</sourceTypes>
+					</metadataFilter>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

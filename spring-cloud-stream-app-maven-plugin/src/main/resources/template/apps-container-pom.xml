@@ -4,7 +4,7 @@
 
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.springframework.cloud.stream.app</groupId>
-	<artifactId>{{app.name}}-{{app.type}}</artifactId>
+	<artifactId>{{app.name}}-{{app.type}}-apps</artifactId>
 	<version>{{app.version}}</version>
 	<packaging>pom</packaging>
 
@@ -56,8 +56,9 @@
 	</developers>
 
 	<modules>
-		<module>{{app.name}}-{{app.type}}-kafka</module>
-		<module>{{app.name}}-{{app.type}}-rabbit</module>
+		{{#binders}}
+		<module>{{app.name}}-{{app.type}}-{{this}}</module>
+		{{/binders}}
 	</modules>
 
 	<scm>
