@@ -17,10 +17,15 @@ package org.springframework.cloud.stream.app.plugin.generator;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -30,6 +35,7 @@ import java.util.Objects;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 
+import org.apache.commons.io.FileUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -128,6 +134,55 @@ public class ProjectGenerator {
 		// README
 		copy(materialize("template/README.adoc", appTemplateProperties),
 				file(appDir, "README.adoc"));
+
+		// mvnw
+		Path copied = Paths.get("template/mvnw");
+		InputStream resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		File targetFile = new File(appDir,"mvnw");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		File mvnwFile = new File(appDir, "mvnw");
+		mvnwFile.setExecutable(true);
+
+		copied = Paths.get("template/mvnw.cmd");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(appDir,"mvnw.cmd");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+
+		File dotMavenDir = new File(appDir, ".mvn");
+		dotMavenDir.mkdirs();
+
+		// .mvn/jvm.config
+		copied = Paths.get("template/.mvn/jvm.config");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(dotMavenDir,"jvm.config");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+
+		// .mvn/maven.config
+		copied = Paths.get("template/.mvn/maven.config");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(dotMavenDir,"maven.config");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+
+		File dotMavenWrapper = new File(appDir, ".mvn/wrapper");
+		dotMavenWrapper.mkdirs();
+
+		// .mvn/wrapper/maven-wrapper.jar
+		copied = Paths.get("template/.mvn/wrapper/maven-wrapper.jar");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(dotMavenWrapper,"maven-wrapper.jar");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+
+		// .mvn/wrapper/maven-wrapper.properties
+		copied = Paths.get("template/.mvn/wrapper/maven-wrapper.properties");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(dotMavenWrapper,"maven-wrapper.properties");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+
+		// .mvn/wrapper/MavenWrapperDownloader.java
+		copied = Paths.get("template/.mvn/wrapper/MavenWrapperDownloader.java");
+		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
+		targetFile = new File(dotMavenWrapper,"MavenWrapperDownloader.java");
+		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
 	}
 
 	private String materialize(String templatePath, Map<String, Object> templateProperties) throws IOException {
