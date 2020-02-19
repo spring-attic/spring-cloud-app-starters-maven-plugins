@@ -19,6 +19,10 @@ package org.springframework.cloud.stream.app.plugin;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
@@ -27,7 +31,7 @@ import org.codehaus.plexus.util.xml.pull.MXSerializer;
 import org.codehaus.plexus.util.xml.pull.XmlSerializer;
 
 /**
- * Uses the private MavenXpp3WriterEx write methods to convert Model elements into XML strings.
+ * Uses the private MavenXpp3Writer write methods to convert Model elements into XML strings.
  *
  * @author Christian Tzolov
  */
@@ -35,7 +39,7 @@ public class MavenXmlWriter {
 
 	/**
 	 * Serializes an {@link Dependency} instance into XML text.
-	 * Uses the private {@link MavenXpp3Writer#writeDependency(Dependency, String, XmlSerializer)} method.
+	 * Uses the private MavenXpp3Writer#writeDependency(Dependency, String, XmlSerializer) method.
 	 */
 	public static String toXml(Dependency dependency) {
 		return write(serializer -> invokeMavenXppWriteMethod(
@@ -44,18 +48,37 @@ public class MavenXmlWriter {
 
 	/**
 	 * Serializes an {@link Dependency} instance into XML text.
-	 * Uses the private {@link MavenXpp3Writer#writePlugin(Plugin, String, XmlSerializer)} method.
+	 * Uses the private MavenXpp3Writer#writePlugin(Plugin, String, XmlSerializer) method.
 	 */
 	public static String toXml(Plugin plugin) {
 		return write(serializer -> invokeMavenXppWriteMethod(
 				plugin, "writePlugin", "plugin", serializer));
 	}
 
-	public interface FragmentWriter {
-		void write(XmlSerializer serializer);
+	public static <T> String elementToXml(T element) {
+		String privateMethodName = "write" + element.getClass().getSimpleName();
+		String xmlTagName = element.getClass().getSimpleName().toLowerCase();
+		return write(serializer -> invokeMavenXppWriteMethod(
+				element, privateMethodName, xmlTagName, serializer));
 	}
 
-	public static String write(FragmentWriter fragmentWriter) {
+	public static String indent(String input, int indentation) {
+		String indent = spaceString(indentation);
+		String b = Arrays.stream(input.split("\n"))
+				.map(l -> indent + l)
+				.collect(Collectors.joining());
+		return b;
+	}
+
+	private static String spaceString(int n) {
+		StringBuilder sb = new StringBuilder("\n");
+		for (int i = 0; i < n; i++) {
+			sb.append(" ");
+		}
+		return sb.toString();
+	}
+
+	public static String write(Consumer<XmlSerializer> elementWriter) {
 		try {
 			Writer writer = new StringWriter();
 
@@ -65,13 +88,12 @@ public class MavenXmlWriter {
 			serializer.setOutput(writer);
 			serializer.startDocument("UTF-8", null);
 
-			fragmentWriter.write(serializer);
+			elementWriter.accept(serializer);
 
 			serializer.endDocument();
 
 			String result = writer.toString();
-			result = result.substring(result.indexOf('\n') + 1); // Remove first line
-			result = result.replaceAll("\n", "\n    ");
+			result = result.substring(result.indexOf('\n') + 1); // remove first line
 			return result;
 		}
 		catch (Exception e) {
@@ -102,4 +124,10 @@ public class MavenXmlWriter {
 			throw new IllegalStateException(e);
 		}
 	}
+
+	static Function<String, String> indent4 = s -> Arrays.stream(s.split("\n"))
+			.map(l -> spaceString(4) + l)
+			.collect(Collectors.joining());
+
+	static Function<String, String> indent8 = indent4.andThen(indent4);
 }

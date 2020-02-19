@@ -126,21 +126,30 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 						}
 				)
 				.map(MavenXmlWriter::toXml)
+				.map(s -> MavenXmlWriter.indent(s, 10))
 				.collect(Collectors.toList()));
 
 		// Dependencies
-		List<String> stringDependencies = this.dependencies.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
-		List<String> stringGlobalDependencies = this.globalDependencies.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
-		stringDependencies.addAll(stringGlobalDependencies);
-		app.setMavenDependencies(stringDependencies);
+		List<String> dependencies = this.dependencies.stream()
+				.map(MavenXmlWriter::toXml)
+				.map(s -> MavenXmlWriter.indent(s, 8))
+				.collect(Collectors.toList());
+		List<String> globalDependencies = this.globalDependencies.stream()
+				.map(MavenXmlWriter::toXml)
+				.map(s ->  MavenXmlWriter.indent(s, 8))
+				.collect(Collectors.toList());
+		dependencies.addAll(globalDependencies);
+		app.setMavenDependencies(dependencies);
 
-		List<String> plugins = this.additionalPlugins.stream().map(MavenXmlWriter::toXml).collect(Collectors.toList());
+		List<String> plugins = this.additionalPlugins.stream()
+				.map(MavenXmlWriter::toXml)
+				.map(s -> MavenXmlWriter.indent(s, 12))
+				.collect(Collectors.toList());
 		app.setMavenPlugins(plugins);
 
 		// Generator Properties
 		ProjectGeneratorProperties generatorProperties = new ProjectGeneratorProperties();
 		generatorProperties.setBinders(this.binders);
-		generatorProperties.setOverrideAllowed(true);
 		generatorProperties.setOutputFolder(new File(this.generatedProjectHome));
 		generatorProperties.setAppBom(appBom);
 		generatorProperties.setAppDefinition(app);

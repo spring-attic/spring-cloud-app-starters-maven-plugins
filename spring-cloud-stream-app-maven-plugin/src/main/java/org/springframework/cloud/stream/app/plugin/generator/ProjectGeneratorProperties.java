@@ -39,11 +39,6 @@ public class ProjectGeneratorProperties {
 	private File outputFolder = new File("./target/output");
 
 	/**
-	 * If set to true will remove the previously generated apps.
-	 */
-	private boolean overrideAllowed = false;
-
-	/**
 	 * List of binders to generate applications for.
 	 */
 	private List<String> binders;
@@ -70,14 +65,6 @@ public class ProjectGeneratorProperties {
 
 	public void setAppDefinition(AppDefinition appDefinition) {
 		this.appDefinition = appDefinition;
-	}
-
-	public boolean isOverrideAllowed() {
-		return overrideAllowed;
-	}
-
-	public void setOverrideAllowed(boolean overrideAllowed) {
-		this.overrideAllowed = overrideAllowed;
 	}
 
 	public List<String> getBinders() {

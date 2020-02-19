@@ -114,12 +114,6 @@
 								<groupId>org.springframework.boot</groupId>
 								<artifactId>spring-boot-starter-security</artifactId>
 							</dependency>
-							<!--TODO add to the real core-->
-							<dependency>
-								<groupId>org.springframework.boot</groupId>
-								<artifactId>spring-boot-starter-test</artifactId>
-								<scope>test</scope>
-							</dependency>
 						</globalDependencies>
 					</configuration>
 				</plugin>

@@ -17,14 +17,11 @@ package org.springframework.cloud.stream.app.plugin.generator;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,7 +32,6 @@ import java.util.Objects;
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
 
-import org.apache.commons.io.FileUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -53,13 +49,11 @@ public class ProjectGenerator {
 		// ---------------------------------
 		// Generate apps container POM
 		// ---------------------------------
-		File appParentDir = generatorProperties.getOutputFolder();
-		if (appParentDir.exists() && generatorProperties.isOverrideAllowed()) {
-			removeRecursively(appParentDir);
-		}
-		appParentDir.mkdirs();
+		File appParentDir = mkdirs(generatorProperties.getOutputFolder());
 		copy(materialize("template/apps-container-pom.xml", containerTemplateProperties),
 				file(appParentDir, "pom.xml"));
+		// mvnw
+		copyMavenWrapper(appParentDir);
 
 		// ---------------------------------
 		// Generate App projects
@@ -103,19 +97,16 @@ public class ProjectGenerator {
 		appTemplateProperties.put("app-binder", binder);
 
 		// app POM
-		File appDir = file(appRootDirectory, appDefinition.getName() + "-" + appDefinition.getType() + "-" + binder);
-		appDir.mkdir();
+		File appDir =
+				mkdirs(file(appRootDirectory, appDefinition.getName() + "-" + appDefinition.getType() + "-" + binder));
 
 		copy(materialize("template/app-pom.xml", appTemplateProperties), file(appDir, "pom.xml"));
 
-		File appMainSrcDir = pkgToDir(appDir, "src.main.java." + appPackageName);
-		appMainSrcDir.mkdirs();
+		File appMainSrcDir = mkdirs(pkgToDir(appDir, "src.main.java." + appPackageName));
 
-		File appMainResourceDir = pkgToDir(appDir, "src.main.resources");
-		appMainResourceDir.mkdirs();
+		File appMainResourceDir = mkdirs(pkgToDir(appDir, "src.main.resources"));
 
-		File appMetaInfDir = pkgToDir(appDir, "src.main.resources.META-INF");
-		appMetaInfDir.mkdirs();
+		//File appMetaInfDir = mkdirs(pkgToDir(appDir, "src.main.resources.META-INF"));
 
 		// application.properties
 		copy(materialize("template/app.properties", appTemplateProperties),
@@ -125,8 +116,7 @@ public class ProjectGenerator {
 				file(appMainSrcDir, appClassName + ".java"));
 
 		// TESTS
-		File appTestSrcDir = pkgToDir(appDir, "src.test.java." + appPackageName);
-		appTestSrcDir.mkdirs();
+		File appTestSrcDir = mkdirs(pkgToDir(appDir, "src.test.java." + appPackageName));
 
 		copy(materialize("template/AppTests.java", appTemplateProperties),
 				file(appTestSrcDir, appClassName + "Tests.java"));
@@ -136,53 +126,38 @@ public class ProjectGenerator {
 				file(appDir, "README.adoc"));
 
 		// mvnw
-		Path copied = Paths.get("template/mvnw");
-		InputStream resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		File targetFile = new File(appDir,"mvnw");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
-		File mvnwFile = new File(appDir, "mvnw");
-		mvnwFile.setExecutable(true);
+		copyMavenWrapper(appDir);
+	}
 
-		copied = Paths.get("template/mvnw.cmd");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(appDir,"mvnw.cmd");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+	private void copyMavenWrapper(File appDir) throws IOException {
 
-		File dotMavenDir = new File(appDir, ".mvn");
-		dotMavenDir.mkdirs();
+		// mvnw
+		copyResource("template/mvnw", file(appDir, "mvnw"));
+		file(appDir, "mvnw").setExecutable(true);
+
+		copyResource("template/mvnw.cmd", file(appDir, "mvnw.cmd"));
+
+		File dotMavenDir = mkdirs(new File(appDir, ".mvn"));
 
 		// .mvn/jvm.config
-		copied = Paths.get("template/.mvn/jvm.config");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(dotMavenDir,"jvm.config");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		copyResource("template/.mvn/jvm.config", file(dotMavenDir, "jvm.config"));
 
 		// .mvn/maven.config
-		copied = Paths.get("template/.mvn/maven.config");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(dotMavenDir,"maven.config");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		copyResource("template/.mvn/maven.config", file(dotMavenDir, "maven.config"));
 
-		File dotMavenWrapper = new File(appDir, ".mvn/wrapper");
-		dotMavenWrapper.mkdirs();
+		File dotMavenWrapper = mkdirs(file(appDir, ".mvn/wrapper"));
 
 		// .mvn/wrapper/maven-wrapper.jar
-		copied = Paths.get("template/.mvn/wrapper/maven-wrapper.jar");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(dotMavenWrapper,"maven-wrapper.jar");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		copyResource("template/.mvn/wrapper/maven-wrapper.jar",
+				file(dotMavenWrapper, "maven-wrapper.jar"));
 
 		// .mvn/wrapper/maven-wrapper.properties
-		copied = Paths.get("template/.mvn/wrapper/maven-wrapper.properties");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(dotMavenWrapper,"maven-wrapper.properties");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		copyResource("template/.mvn/wrapper/maven-wrapper.properties",
+				file(dotMavenWrapper, "maven-wrapper.properties"));
 
 		// .mvn/wrapper/MavenWrapperDownloader.java
-		copied = Paths.get("template/.mvn/wrapper/MavenWrapperDownloader.java");
-		resourceAsStream = this.getClass().getClassLoader().getResourceAsStream(copied.toString());
-		targetFile = new File(dotMavenWrapper,"MavenWrapperDownloader.java");
-		FileUtils.copyInputStreamToFile(resourceAsStream, targetFile);
+		copyResource("template/.mvn/wrapper/MavenWrapperDownloader.java",
+				file(dotMavenWrapper, "MavenWrapperDownloader.java"));
 	}
 
 	private String materialize(String templatePath, Map<String, Object> templateProperties) throws IOException {
@@ -193,9 +168,26 @@ public class ProjectGenerator {
 		}
 	}
 
+	private void copyResource(String resourcePath, File toFile) throws IOException {
+		try (InputStream resourcesStream =
+					 Objects.requireNonNull(this.getClass().getClassLoader().getResourceAsStream(resourcePath))) {
+			Files.copy(resourcesStream, toFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+
 	// Utils
+	public File mkdirs(File dir) {
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+		if (!dir.isDirectory()) {
+			throw new IllegalStateException("Not a directory: " + dir);
+		}
+		return dir;
+	}
+
 	public static void copy(String content, File file) throws IOException {
-		Files.copy(new ByteArrayInputStream(content.getBytes()), file.toPath());
+		Files.copy(new ByteArrayInputStream(content.getBytes()), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
 	}
 
 	public static String toPkg(String text) {
