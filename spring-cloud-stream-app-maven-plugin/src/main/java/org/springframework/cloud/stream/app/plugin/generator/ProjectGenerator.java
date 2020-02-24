@@ -21,10 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -41,7 +39,12 @@ public class ProjectGenerator {
 
 	public void generate(ProjectGeneratorProperties generatorProperties) throws IOException {
 
-		Map<String, Object> containerTemplateProperties = createContainerTemplateProperties();
+		Map<String, Object> containerTemplateProperties = new HashMap<>();
+		// register {{#capitalize}}...{{/capitalize}} function.
+		containerTemplateProperties.put("capitalize", (Mustache.Lambda) (frag, out) -> out.write(capitalize(frag.execute().trim())));
+		// register {{#camelCase}}...{{/camelCase}} function.
+		containerTemplateProperties.put("camelCase", (Mustache.Lambda) (frag, out) -> out.write(camelCase(frag.execute().trim())));
+
 		containerTemplateProperties.put("bom", generatorProperties.getAppBom());
 		containerTemplateProperties.put("app", generatorProperties.getAppDefinition());
 		containerTemplateProperties.put("binders", generatorProperties.getBinders());
@@ -52,7 +55,7 @@ public class ProjectGenerator {
 		File appParentDir = mkdirs(generatorProperties.getOutputFolder());
 		copy(materialize("template/apps-container-pom.xml", containerTemplateProperties),
 				file(appParentDir, "pom.xml"));
-		// mvnw
+		// maven wrapper
 		copyMavenWrapper(appParentDir);
 
 		// ---------------------------------
@@ -60,20 +63,8 @@ public class ProjectGenerator {
 		// ---------------------------------
 		Assert.notEmpty(generatorProperties.getBinders(), "At least one Binder must be provided");
 		for (String binder : generatorProperties.getBinders()) {
-			generateAppProject(appParentDir, containerTemplateProperties,
-					generatorProperties.getAppDefinition(), binder);
+			generateAppProject(appParentDir, containerTemplateProperties, generatorProperties.getAppDefinition(), binder);
 		}
-	}
-
-	private Map<String, Object> createContainerTemplateProperties() {
-		Map<String, Object> containerTemplateProperties = new HashMap<>();
-		// register {{#capitalize}}...{{/capitalize}} function.
-		containerTemplateProperties.put("capitalize",
-				(Mustache.Lambda) (frag, out) -> out.write(capitalize(frag.execute().trim())));
-		// register {{#camelCase}}...{{/camelCase}} function.
-		containerTemplateProperties.put("camelCase",
-				(Mustache.Lambda) (frag, out) -> out.write(camelCase(frag.execute().trim())));
-		return containerTemplateProperties;
 	}
 
 	private void generateAppProject(File appRootDirectory, Map<String, Object> containerTemplateProperties,
@@ -106,8 +97,6 @@ public class ProjectGenerator {
 
 		File appMainResourceDir = mkdirs(pkgToDir(appDir, "src.main.resources"));
 
-		//File appMetaInfDir = mkdirs(pkgToDir(appDir, "src.main.resources.META-INF"));
-
 		// application.properties
 		copy(materialize("template/app.properties", appTemplateProperties),
 				file(appMainResourceDir, "application.properties"));
@@ -125,7 +114,7 @@ public class ProjectGenerator {
 		copy(materialize("template/README.adoc", appTemplateProperties),
 				file(appDir, "README.adoc"));
 
-		// mvnw
+		// maven wrapper
 		copyMavenWrapper(appDir);
 	}
 
@@ -176,7 +165,7 @@ public class ProjectGenerator {
 	}
 
 	// Utils
-	public File mkdirs(File dir) {
+	public static File mkdirs(File dir) {
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
@@ -213,20 +202,5 @@ public class ProjectGenerator {
 
 	public static File file(File parent, String child) {
 		return new File(parent, child);
-	}
-
-	/**
-	 *
-	 * Files.walk() returns a Stream of Path that we sort in reverse order.
-	 * This places the paths denoting the contents of directories before
-	 * directories itself. Thereafter it maps Path to File and deletes each File.
-	 * @param dir directory to delete recursively.
-	 * @throws IOException
-	 */
-	public static void removeRecursively(File dir) throws IOException {
-		Files.walk(dir.toPath())
-				.sorted(Comparator.reverseOrder())
-				.map(Path::toFile)
-				.forEach(File::delete);
 	}
 }

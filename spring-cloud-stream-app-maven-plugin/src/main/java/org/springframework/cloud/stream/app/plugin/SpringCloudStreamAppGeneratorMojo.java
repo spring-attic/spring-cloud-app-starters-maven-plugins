@@ -34,6 +34,7 @@ import org.springframework.cloud.stream.app.plugin.generator.AppBom;
 import org.springframework.cloud.stream.app.plugin.generator.AppDefinition;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGenerator;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGeneratorProperties;
+import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
@@ -46,6 +47,9 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
 	@Parameter(defaultValue = "Docker", required = true)
 	private AppDefinition.ContainerImageFormat containerImageFormat;
+
+	@Parameter(defaultValue = "springcloudstream")
+	private String containerImageOrgName;
 
 	@Parameter(defaultValue = "false")
 	private boolean enableContainerImageMetadata;
@@ -108,8 +112,6 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		app.setType(this.generatedAppType);
 		app.setVersion(this.generatedProjectVersion);
 		app.setFunctionClass(this.configClass);
-		app.setContainerImageFormat(this.containerImageFormat);
-		app.setEnableContainerImageMetadata(this.enableContainerImageMetadata);
 
 		app.setMetadataSourceTypeFilters(this.metadataSourceTypeFilters);
 		app.setMetadataNameFilters(this.metadataNameFilters);
@@ -126,26 +128,35 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 						}
 				)
 				.map(MavenXmlWriter::toXml)
-				.map(s -> MavenXmlWriter.indent(s, 10))
+				.map(xml -> MavenXmlWriter.indent(xml, 12))
 				.collect(Collectors.toList()));
 
 		// Dependencies
-		List<String> dependencies = this.dependencies.stream()
+		List<Dependency> allDependenciesMerged = new ArrayList<>(this.dependencies);
+		allDependenciesMerged.addAll(this.globalDependencies);
+		app.setMavenDependencies(allDependenciesMerged.stream()
 				.map(MavenXmlWriter::toXml)
-				.map(s -> MavenXmlWriter.indent(s, 8))
-				.collect(Collectors.toList());
-		List<String> globalDependencies = this.globalDependencies.stream()
-				.map(MavenXmlWriter::toXml)
-				.map(s ->  MavenXmlWriter.indent(s, 8))
-				.collect(Collectors.toList());
-		dependencies.addAll(globalDependencies);
-		app.setMavenDependencies(dependencies);
+				.map(xml -> MavenXmlWriter.indent(xml, 8))
+				.collect(Collectors.toList()));
 
-		List<String> plugins = this.additionalPlugins.stream()
+		// Plugins
+		app.setMavenPlugins(this.additionalPlugins.stream()
 				.map(MavenXmlWriter::toXml)
-				.map(s -> MavenXmlWriter.indent(s, 12))
-				.collect(Collectors.toList());
-		app.setMavenPlugins(plugins);
+				.map(d -> MavenXmlWriter.indent(d, 12))
+				.collect(Collectors.toList()));
+
+		// Container Image configuration
+		app.setContainerImageFormat(this.containerImageFormat);
+		app.setEnableContainerImageMetadata(this.enableContainerImageMetadata);
+		if (StringUtils.hasText(this.containerImageOrgName)) {
+			app.setContainerImageOrgName(this.containerImageOrgName);
+		}
+		if (this.generatedProjectVersion.contains("SNAPSHOT")) {
+			app.setContainerImageTag("latest");
+		}
+		else {
+			app.setContainerImageTag(this.generatedProjectVersion);
+		}
 
 		// Generator Properties
 		ProjectGeneratorProperties generatorProperties = new ProjectGeneratorProperties();

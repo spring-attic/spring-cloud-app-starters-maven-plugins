@@ -36,16 +36,20 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<!-- (begin) managed dependencies -->
 			{{#app.mavenManagedDependencies}}
 			{{this}}
 			{{/app.mavenManagedDependencies}}
+			<!-- (end) managed dependencies -->
 		</dependencies>
 	</dependencyManagement>
 
 	<dependencies>
+		<!-- (begin) additional dependencies -->
 		{{#app.mavenDependencies}}
 		{{this}}
 		{{/app.mavenDependencies}}
+		<!-- (end) additional dependencies -->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
 			<artifactId>spring-cloud-stream-binder-{{app-binder}}</artifactId>
@@ -95,10 +99,11 @@
 	</pluginRepositories>
 	<build>
 		<plugins>
+			<!-- (begin) additional plugins -->
 			{{#app.mavenPlugins}}
 			{{this}}
 			{{/app.mavenPlugins}}
-
+			<!-- (end) additional plugins -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -113,9 +118,9 @@
 						<image>springcloud/openjdk</image>
 					</from>
 					<to>
-						<image>springcloudstream/${project.artifactId}</image>
+						<image>{{app.containerImageOrgName}}:${project.artifactId}</image>
 						<tags>
-							<tag>latest</tag>
+							<tag>{{app.containerImageTag}}</tag>
 						</tags>
 					</to>
 					<container>
@@ -164,7 +169,6 @@
 				<configuration>
 					{{#app.enableContainerImageMetadata}}
 					<storeFilteredMetadata>true</storeFilteredMetadata>
-
 					<metadataFilter>
 						<names>
 							{{#app.metadataNameFilters}}

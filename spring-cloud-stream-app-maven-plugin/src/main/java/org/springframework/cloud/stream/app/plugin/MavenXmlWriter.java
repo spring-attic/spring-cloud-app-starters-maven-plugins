@@ -16,17 +16,18 @@
 
 package org.springframework.cloud.stream.app.plugin;
 
+import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.reflect.Method;
-import java.util.Arrays;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.codehaus.plexus.util.xml.Xpp3DomBuilder;
 import org.codehaus.plexus.util.xml.pull.MXSerializer;
 import org.codehaus.plexus.util.xml.pull.XmlSerializer;
 
@@ -38,44 +39,61 @@ import org.codehaus.plexus.util.xml.pull.XmlSerializer;
 public class MavenXmlWriter {
 
 	/**
-	 * Serializes an {@link Dependency} instance into XML text.
-	 * Uses the private MavenXpp3Writer#writeDependency(Dependency, String, XmlSerializer) method.
+	 * Serializes any instance of a e.g. org.apache.maven.model.XXXX class into XML text.
+	 * Via reflections calls the private MavenXpp3Writer#writeXXXX(XXXX, String, XmlSerializer) method.
+	 * As xml tag uses the lower case of the XXXX class name (e.g. xxxx).
+	 *
+	 * If above name conventions don't hold or additional processing is required implement a dedicated overload method.
+	 * For example see {@link #toXml(Plugin)}
 	 */
-	public static String toXml(Dependency dependency) {
-		return write(serializer -> invokeMavenXppWriteMethod(
-				dependency, "writeDependency", "dependency", serializer));
+	public static <T> String toXml(T element) {
+		String privateMethodName = "write" + element.getClass().getSimpleName();
+		String xmlTagName = element.getClass().getSimpleName().toLowerCase();
+		return write(serializer -> invokeMavenXppWriteMethod(element, privateMethodName, xmlTagName, serializer));
 	}
 
 	/**
-	 * Serializes an {@link Dependency} instance into XML text.
-	 * Uses the private MavenXpp3Writer#writePlugin(Plugin, String, XmlSerializer) method.
+	 * Serializes an {@link Plugin} instance into XML text, using reflection to invoke the private
+	 * MavenXpp3Writer#writePlugin(Plugin, String, XmlSerializer) method. The Plugin Configuration block (when present)
+	 * requires special handling to convert String values into Xpp3Dom object before writing.
+	 *
+	 * For Plugin Configuration you mast nest the configuration content into a CDATA block like shown here:
+	 * <code>
+	 *  <additionalPlugins>
+	 *  	<plugin>
+	 * 			<groupId>com.google.cloud.tools</groupId>
+	 * 			<artifactId>jib-maven-plugin</artifactId>
+	 * 			<version>2.0.0</version>
+	 * 			<configuration>
+	 * 				<![CDATA[
+	 * 					<from><image>springcloud/openjdk</image></from>
+	 * 					<to>
+	 * 						<image>springcloudstream:${project.artifactId}</image>
+	 * 						<tags><tag>latest</tag></tags>
+	 * 					</to>
+	 * 					<container>
+	 * 						<format>Docker</format>
+	 *					</container>
+	 * 				]]>
+	 * 			</configuration>
+	 * 		</plugin>
+	 * 	</additionalPlugins>
+	 * </code>
 	 */
 	public static String toXml(Plugin plugin) {
+		try {
+			Object configuration = plugin.getConfiguration();
+			if (configuration != null && !(configuration instanceof Xpp3Dom)) {
+				plugin.setConfiguration(Xpp3DomBuilder.build(new StringReader(
+						"<configuration>" + configuration.toString() + "</configuration>")));
+			}
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Issue creating config for additional plugin", ex);
+		}
+
 		return write(serializer -> invokeMavenXppWriteMethod(
 				plugin, "writePlugin", "plugin", serializer));
-	}
-
-	public static <T> String elementToXml(T element) {
-		String privateMethodName = "write" + element.getClass().getSimpleName();
-		String xmlTagName = element.getClass().getSimpleName().toLowerCase();
-		return write(serializer -> invokeMavenXppWriteMethod(
-				element, privateMethodName, xmlTagName, serializer));
-	}
-
-	public static String indent(String input, int indentation) {
-		String indent = spaceString(indentation);
-		String b = Arrays.stream(input.split("\n"))
-				.map(l -> indent + l)
-				.collect(Collectors.joining());
-		return b;
-	}
-
-	private static String spaceString(int n) {
-		StringBuilder sb = new StringBuilder("\n");
-		for (int i = 0; i < n; i++) {
-			sb.append(" ");
-		}
-		return sb.toString();
 	}
 
 	public static String write(Consumer<XmlSerializer> elementWriter) {
@@ -86,15 +104,13 @@ public class MavenXmlWriter {
 			serializer.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-indentation", "  ");
 			serializer.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-line-separator", "\n");
 			serializer.setOutput(writer);
+
 			serializer.startDocument("UTF-8", null);
-
 			elementWriter.accept(serializer);
-
 			serializer.endDocument();
 
 			String result = writer.toString();
-			result = result.substring(result.indexOf('\n') + 1); // remove first line
-			return result;
+			return result.substring(result.indexOf('\n') + 1); // remove first line (e.g. remove the <?xml ... ?>)
 		}
 		catch (Exception e) {
 			throw new IllegalStateException(e);
@@ -125,9 +141,9 @@ public class MavenXmlWriter {
 		}
 	}
 
-	static Function<String, String> indent4 = s -> Arrays.stream(s.split("\n"))
-			.map(l -> spaceString(4) + l)
-			.collect(Collectors.joining());
-
-	static Function<String, String> indent8 = indent4.andThen(indent4);
+	public static String indent(String input, int indentation) {
+		String indentPrefix = "\n" + IntStream.range(0, indentation).mapToObj(i -> " ").collect(Collectors.joining());
+		String indentedInput = input.replace("\n", indentPrefix);
+		return indentedInput.substring(0, indentedInput.lastIndexOf(indentPrefix)); // remove the last empty line.
+	}
 }

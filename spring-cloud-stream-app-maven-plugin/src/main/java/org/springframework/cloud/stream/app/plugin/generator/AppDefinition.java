@@ -47,12 +47,19 @@ public class AppDefinition {
 
 	private String functionClass;
 
+	/**
+	 * Allow to generate either Docker or OCI image formats
+	 */
 	private ContainerImageFormat containerImageFormat = ContainerImageFormat.Docker;
 
 	/**
 	 * True will attempt to inline the (white) filtered Spring Boot metadata as Base64 encoded property.
 	 */
 	private boolean enableContainerImageMetadata = false;
+
+	private String containerImageOrgName = "springcloudstream";
+
+	private String containerImageTag = "latest";
 
 	public String getName() {
 		return name;
@@ -160,5 +167,21 @@ public class AppDefinition {
 
 	public void setEnableContainerImageMetadata(boolean enableContainerImageMetadata) {
 		this.enableContainerImageMetadata = enableContainerImageMetadata;
+	}
+
+	public String getContainerImageOrgName() {
+		return containerImageOrgName;
+	}
+
+	public void setContainerImageOrgName(String containerImageOrgName) {
+		this.containerImageOrgName = containerImageOrgName;
+	}
+
+	public String getContainerImageTag() {
+		return containerImageTag;
+	}
+
+	public void setContainerImageTag(String containerImageTag) {
+		this.containerImageTag = containerImageTag;
 	}
 }
