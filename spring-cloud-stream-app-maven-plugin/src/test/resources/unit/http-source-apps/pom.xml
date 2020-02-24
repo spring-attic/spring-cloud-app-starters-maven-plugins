@@ -45,8 +45,8 @@
 						<bootVersion>${spring-boot.version}</bootVersion>
 
 						<binders>
-							<item>kafka</item>
-							<item>rabbit</item>
+							<binder>kafka</binder>
+							<binder>rabbit</binder>
 						</binders>
 						<boms>
 							<dependency>
@@ -115,6 +115,42 @@
 								<artifactId>spring-boot-starter-security</artifactId>
 							</dependency>
 						</globalDependencies>
+						<additionalPlugins>
+							<plugin>
+								<groupId>org.logaritex</groupId>
+								<artifactId>test-additional-maven-plugin</artifactId>
+								<version>3.0.0</version>
+								<configuration>
+									<![CDATA[
+										<from>
+											<image>springcloud/openjdk</image>
+										</from>
+										<to>
+											<image>springcloudstream:${project.artifactId}</image>
+											<tags>
+												<tag>latest</tag>
+											</tags>
+										</to>
+										<container>
+											<creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+											<format>Docker</format>
+											<labels>
+												<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>
+											</labels>
+										</container>
+									]]>
+								</configuration>
+								<executions>
+									<execution>
+										<id>sign-artifacts</id>
+										<phase>verify</phase>
+										<goals>
+											<goal>sign</goal>
+										</goals>
+									</execution>
+								</executions>
+							</plugin>
+						</additionalPlugins>
 					</configuration>
 				</plugin>
 			</plugins>
