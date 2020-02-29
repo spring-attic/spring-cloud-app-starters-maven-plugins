@@ -118,7 +118,7 @@
 						<image>springcloud/openjdk</image>
 					</from>
 					<to>
-						<image>{{app.containerImageOrgName}}:${project.artifactId}</image>
+						<image>{{app.containerImageOrgName}}/${project.artifactId}</image>
 						<tags>
 							<tag>{{app.containerImageTag}}</tag>
 						</tags>

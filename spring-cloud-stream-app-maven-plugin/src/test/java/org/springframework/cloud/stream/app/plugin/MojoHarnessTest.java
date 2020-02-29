@@ -89,6 +89,8 @@ public class MojoHarnessTest {
 		Plugin jibPlugin = plugins.stream().filter(p -> p.getArtifactId().equals("jib-maven-plugin")).findFirst().get();
 		assertThat(jibPlugin.getConfiguration().toString())
 				.contains("<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>");
+		assertThat(jibPlugin.getConfiguration().toString())
+				.contains("<image>testspringcloud/${project.artifactId}</image>");
 
 		assertThat(pomModel.getRepositories().size()).isEqualTo(2);
 	}

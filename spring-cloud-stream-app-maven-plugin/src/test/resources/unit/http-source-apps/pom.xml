@@ -165,6 +165,8 @@
 				<configuration>
 					<generatedProjectHome>./target/apps</generatedProjectHome>
 
+					<containerImageOrgName>testspringcloud</containerImageOrgName>
+
 					<enableContainerImageMetadata>true</enableContainerImageMetadata>
 
 					<!-- BOM -->
