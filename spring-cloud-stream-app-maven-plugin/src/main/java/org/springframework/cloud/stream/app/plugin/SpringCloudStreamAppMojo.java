@@ -141,6 +141,18 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	@Parameter
 	private List<Dependency> requiresUnpack = new ArrayList<>();
 
+	@Parameter
+	String metadataPluginVersion = "1.0.2.M1";
+
+	@Parameter
+	List<String> metadataNameFilters = new ArrayList<>();
+
+	@Parameter
+	List<String> metadataSourceTypeFilters = new ArrayList<>();
+
+	@Parameter(defaultValue = "false")
+	private boolean enableContainerImageMetadata;
+
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -168,6 +180,12 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		projectGenerator.setAdditionalBoms(additionalBoms);
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
 		projectGenerator.setRequiresUnpack(requiresUnpack);
+
+		projectGenerator.setMetadataPluginVersion(metadataPluginVersion);
+		projectGenerator.setMetadataNameFilters(metadataNameFilters);
+		projectGenerator.setMetadataSourceTypesFilters(metadataSourceTypeFilters);
+		projectGenerator.setEnableContainerImageMetadata(enableContainerImageMetadata);
+
 		if (project != null) {
 			@SuppressWarnings("unchecked")
 			List<MavenProject> collectedProjects = project.getParent().getCollectedProjects();
