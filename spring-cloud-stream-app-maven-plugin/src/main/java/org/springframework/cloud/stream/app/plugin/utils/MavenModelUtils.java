@@ -372,7 +372,7 @@ public class MavenModelUtils {
 		org.apache.maven.model.Repository pluginRepo1 = new org.apache.maven.model.Repository();
 		pluginRepo1.setId("spring-snapshots");
 		pluginRepo1.setName("Spring Snapshots");
-		pluginRepo1.setUrl("http://repo.spring.io/libs-snapshot-local");
+		pluginRepo1.setUrl("https://repo.spring.io/libs-snapshot-local");
 		pluginRepo1.setSnapshots(repositoryPolicy1);
 
 		RepositoryPolicy repositoryPolicy2 = new RepositoryPolicy();
@@ -381,7 +381,7 @@ public class MavenModelUtils {
 		pluginRepo2.setId("spring-milestones");
 		pluginRepo2.setName("Spring Milestones");
 		pluginRepo2.setSnapshots(repositoryPolicy2);
-		pluginRepo2.setUrl("http://repo.spring.io/libs-milestone-local");
+		pluginRepo2.setUrl("https://repo.spring.io/libs-milestone-local");
 
 		List<Repository> pluginRepositories = pomModel.getPluginRepositories();
 		if (!pluginRepositories.contains(pluginRepo1)) {
