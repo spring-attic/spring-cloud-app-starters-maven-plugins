@@ -17,8 +17,10 @@
 package org.springframework.cloud.stream.app.plugin;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -80,6 +82,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	private static final String MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE = "management.endpoints.web.exposure.include";
 
 	private static final String SPRING_AUTOCONFIGURE_EXCLUDE = "spring.autoconfigure.exclude";
+
+	static final String WHITELIST_PATH = "META-INF/dataflow-configuration-metadata-whitelist.properties";
+	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
+	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
 	@Parameter(defaultValue="${project}", readonly=true, required=true)
 	private MavenProject project;
@@ -181,6 +187,8 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		projectGenerator.setAdditionalPlugins(additionalPlugins);
 		projectGenerator.setRequiresUnpack(requiresUnpack);
 
+		loadWhitelistFromFile(metadataSourceTypeFilters, metadataNameFilters);
+
 		projectGenerator.setMetadataPluginVersion(metadataPluginVersion);
 		projectGenerator.setMetadataNameFilters(metadataNameFilters);
 		projectGenerator.setMetadataSourceTypesFilters(metadataSourceTypeFilters);
@@ -216,6 +224,39 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		}
 		catch (IOException | XmlPullParserException e) {
 			throw new IllegalStateException(e);
+		}
+	}
+
+	private void loadWhitelistFromFile(List<String> sourceTypeFilters, List<String> nameFilters) {
+		if (project == null) {
+			return;
+		}
+		File whitelistPropertiesFile = new File(project.getBasedir(), "src/main/resources/" + WHITELIST_PATH);
+		if (whitelistPropertiesFile.exists()) {
+			Properties properties = new Properties();
+			try (InputStream is = new FileInputStream(whitelistPropertiesFile)) {
+				properties.load(is);
+				if (properties.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+					for (String propertyClass : properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES).split(",")) {
+						if (org.springframework.util.StringUtils.hasText(propertyClass)) {
+							if (!sourceTypeFilters.contains(propertyClass.trim())) {
+								sourceTypeFilters.add(propertyClass.trim());
+							}
+						}
+					}
+				}
+				if (properties.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
+					for (String propertyName : properties.getProperty(CONFIGURATION_PROPERTIES_NAMES).split(",")) {
+						if (org.springframework.util.StringUtils.hasText(propertyName)) {
+							if (!nameFilters.contains(propertyName.trim())) {
+								nameFilters.add(propertyName.trim());
+							}
+						}
+					}
+				}
+			}
+			catch (Exception e) {
+			}
 		}
 	}
 
