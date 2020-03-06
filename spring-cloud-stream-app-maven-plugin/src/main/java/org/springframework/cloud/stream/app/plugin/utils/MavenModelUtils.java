@@ -227,12 +227,8 @@ public class MavenModelUtils {
 		final Xpp3Dom images = SpringCloudStreamPluginUtils.addElement(mavenPluginConfiguration, "images");
 
 		final Xpp3Dom image = SpringCloudStreamPluginUtils.addElement(images, "image");
-		if (!version.endsWith("BUILD-SNAPSHOT")) {
-			SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}:" + version);
-		}
-		else {
-			SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}");
-		}
+
+		SpringCloudStreamPluginUtils.addElement(image, "name", dockerHubOrg + "/${project.artifactId}:" + version);
 
 		final Xpp3Dom build = SpringCloudStreamPluginUtils.addElement(image, "build");
 		SpringCloudStreamPluginUtils.addElement(build, "from", "springcloud/openjdk");
