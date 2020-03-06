@@ -151,12 +151,8 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		if (StringUtils.hasText(this.containerImageOrgName)) {
 			app.setContainerImageOrgName(this.containerImageOrgName);
 		}
-		if (this.generatedProjectVersion.contains("SNAPSHOT")) {
-			app.setContainerImageTag("latest");
-		}
-		else {
-			app.setContainerImageTag(this.generatedProjectVersion);
-		}
+
+		app.setContainerImageTag(this.generatedProjectVersion);
 
 		// Generator Properties
 		ProjectGeneratorProperties generatorProperties = new ProjectGeneratorProperties();
