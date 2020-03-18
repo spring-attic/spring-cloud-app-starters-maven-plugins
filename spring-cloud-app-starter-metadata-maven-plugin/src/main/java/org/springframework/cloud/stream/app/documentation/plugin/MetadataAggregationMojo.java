@@ -175,7 +175,13 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	private String toJson(ConfigurationMetadata metadata) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		jsonMarshaller.write(metadata, baos);
-		return baos.toString();
+		String json = baos.toString();
+
+		// Hack to workaround the https://github.com/mojohaus/properties-maven-plugin/issues/27 and
+		// https://github.com/mojohaus/properties-maven-plugin/pull/38 properties-maven-plugin issues.
+		json  = json.replaceAll("\\$\\{", "{");
+
+		return json;
 	}
 
 	/**
