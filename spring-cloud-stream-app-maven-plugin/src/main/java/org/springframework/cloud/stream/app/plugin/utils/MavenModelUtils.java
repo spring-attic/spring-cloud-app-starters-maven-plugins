@@ -238,8 +238,8 @@ public class MavenModelUtils {
 
 		if (enableContainerImageMetadata) {
 			final Xpp3Dom labels = SpringCloudStreamPluginUtils.addElement(build, "labels");
-			SpringCloudStreamPluginUtils.addElement(labels, "spring.configuration.metadata",
-					"${spring.configuration.metadata.encoded}");
+			SpringCloudStreamPluginUtils.addElement(labels, "org.springframework.cloud.dataflow.spring-configuration-metadata.json",
+					"${org.springframework.cloud.dataflow.spring.configuration.metadata.json}");
 		}
 
 		final Xpp3Dom entryPoint = new Xpp3Dom("entryPoint");

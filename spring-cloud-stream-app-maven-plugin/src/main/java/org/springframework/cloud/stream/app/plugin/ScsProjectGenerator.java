@@ -59,7 +59,7 @@ public class ScsProjectGenerator extends ProjectGenerator {
 
 	private List<Dependency> requiresUnpack;
 
-	private String metadataPluginVersion = "1.0.2.M1";
+	private String metadataPluginVersion = "2.0.0.BUILD-SNAPSHOT";
 
 	private List<String> metadataNameFilters = new ArrayList<>();
 
