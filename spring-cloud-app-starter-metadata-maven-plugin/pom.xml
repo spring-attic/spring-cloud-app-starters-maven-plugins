@@ -15,6 +15,7 @@
 		<maven.version>3.6.3</maven.version>
 		<junit.version>4.12</junit.version>
 		<assertj.version>3.11.1</assertj.version>
+		<commons-text.version>1.8</commons-text.version>
 	</properties>
 
 	<dependencies>
@@ -56,6 +57,11 @@
 			<artifactId>maven-plugin-annotations</artifactId>
 			<version>3.4</version>
 			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>${commons-text.version}</version>
 		</dependency>
 	</dependencies>
 

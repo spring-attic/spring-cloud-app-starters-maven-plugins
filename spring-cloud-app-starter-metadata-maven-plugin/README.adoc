@@ -54,7 +54,7 @@ maven classifier used for the artifact, which can be customized as such:)
 ```
 
 You can filter in subset of the gathered metadata and store it into a java property file: `META-INF/spring-configuration-metadata-encoded.properties`.
-This file has single property `spring.configuration.metadata.encoded` which contains the pre-filtered metadata encoded as Base64.
+This file has single property `org.springframework.cloud.dataflow.spring.configuration.metadata.json` which contains the pre-filtered metadata encoded as Base64.
 To activate this feature you need to set the `storeFilteredMetadata` parameter to `true`. Use the `metadataFilter` to configure the whitelisted metadata content to include.
 For example:
 ```

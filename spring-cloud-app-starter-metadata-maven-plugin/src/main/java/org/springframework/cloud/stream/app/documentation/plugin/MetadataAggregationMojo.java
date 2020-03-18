@@ -38,6 +38,7 @@ import java.util.jar.JarOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.Component;
@@ -52,7 +53,6 @@ import org.springframework.boot.configurationprocessor.metadata.ConfigurationMet
 import org.springframework.boot.configurationprocessor.metadata.ItemHint;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
 import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
-import org.springframework.util.Base64Utils;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -155,7 +155,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 	/**
 	 *
-	 * Store pre-filtered and base64 encoded data into a property file.
+	 * Store pre-filtered and json-escaped metadata into a property file.
 	 */
 	private void storeFilteredMetadata() throws MojoExecutionException {
 		File targetFolder = new File(mavenProject.getBuild().getOutputDirectory(), "META-INF");
@@ -164,19 +164,18 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		}
 		try (FileWriter fileWriter = new FileWriter(new File(targetFolder, "spring-configuration-metadata-encoded.properties"))) {
 			ConfigurationMetadata metadata = gatherConfigurationMetadata(metadataFilter);
-			byte[] metadataBase64Encoded = Base64Utils.encode(toByteArray(metadata));
-			fileWriter.write("spring.configuration.metadata.encoded=" + new String(metadataBase64Encoded));
+			String escapedJson = StringEscapeUtils.escapeJson(toJson(metadata));
+			fileWriter.write("org.springframework.cloud.dataflow.spring.configuration.metadata.json=" + escapedJson);
 		}
 		catch (IOException e) {
 			throw new MojoExecutionException("Error creating file ", e);
 		}
-
 	}
 
-	private byte[] toByteArray(ConfigurationMetadata metadata) throws IOException {
+	private String toJson(ConfigurationMetadata metadata) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		jsonMarshaller.write(metadata, baos);
-		return baos.toByteArray();
+		return baos.toString();
 	}
 
 	/**

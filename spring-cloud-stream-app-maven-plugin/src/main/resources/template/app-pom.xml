@@ -128,7 +128,9 @@
 						<format>Docker</format>
 						{{#app.enableContainerImageMetadata}}
 						<labels>
-							<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>
+							<org.springframework.cloud.dataflow.spring-configuration-metadata.json>
+								${org.springframework.cloud.dataflow.spring.configuration.metadata.json}
+							</org.springframework.cloud.dataflow.spring-configuration-metadata.json>
 						</labels>
 						{{/app.enableContainerImageMetadata}}
 					</container>

@@ -135,7 +135,7 @@
 											<creationTime>USE_CURRENT_TIMESTAMP</creationTime>
 											<format>Docker</format>
 											<labels>
-												<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>
+												<org.springframework.cloud.dataflow.spring-configuration-metadata.json>${org.springframework.cloud.dataflow.spring.configuration.metadata.json}</org.springframework.cloud.dataflow.spring-configuration-metadata.json>
 											</labels>
 										</container>
 									]]>

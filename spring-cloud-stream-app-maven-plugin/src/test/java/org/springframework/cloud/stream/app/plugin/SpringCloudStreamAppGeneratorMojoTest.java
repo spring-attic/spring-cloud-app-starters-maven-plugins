@@ -108,7 +108,9 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 		Plugin jibPlugin = plugins.stream().filter(p -> p.getArtifactId().equals("jib-maven-plugin")).findFirst().get();
 		assertThat(jibPlugin.getConfiguration().toString())
-				.doesNotContain("<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>");
+				.doesNotContain("<org.springframework.cloud.dataflow.spring-configuration-metadata.json>" +
+						"${org.springframework.cloud.dataflow.spring.configuration.metadata.json}" +
+						"</org.springframework.cloud.dataflow.spring-configuration-metadata.json>");
 	}
 
 	@Test
@@ -153,7 +155,9 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 		Plugin jibPlugin = plugins.stream().filter(p -> p.getArtifactId().equals("jib-maven-plugin")).findFirst().get();
 		assertThat(jibPlugin.getConfiguration().toString())
-				.contains("<spring.configuration.metadata>${spring.configuration.metadata.encoded}</spring.configuration.metadata>");
+				.contains("<org.springframework.cloud.dataflow.spring-configuration-metadata.json>" +
+						"${org.springframework.cloud.dataflow.spring.configuration.metadata.json}" +
+						"</org.springframework.cloud.dataflow.spring-configuration-metadata.json>");
 
 		assertThat(pomModel.getRepositories().size()).isEqualTo(2);
 	}
