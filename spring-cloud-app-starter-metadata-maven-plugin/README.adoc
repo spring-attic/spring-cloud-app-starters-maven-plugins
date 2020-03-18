@@ -12,7 +12,7 @@ To use this plugin, configure this plugin for your app project (either directly 
 			<plugin>
 				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
 				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
-				<version>1.0.0.BUILD-SNAPSHOT</version>
+				<version>2.0.0.BUILD-SNAPSHOT</version>
 				<executions>
 					<execution>
 						<id>aggregate-metadata</id>
@@ -35,7 +35,7 @@ maven classifier used for the artifact, which can be customized as such:)
 			<plugin>
 				<groupId>org.springframework.cloud.stream.app.plugin</groupId>
 				<artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
-				<version>1.0.0.BUILD-SNAPSHOT</version>
+				<version>2.0.0.BUILD-SNAPSHOT</version>
 				<executions>
 					<execution>
 						<id>aggregate-metadata</id>
@@ -63,7 +63,7 @@ For example:
       <plugin>
         <groupId>org.springframework.cloud</groupId>
         <artifactId>spring-cloud-app-starter-metadata-maven-plugin</artifactId>
-        <version>1.0.2.BUILD-SNAPSHOT</version>
+        <version>2.0.0.BUILD-SNAPSHOT</version>
 
         <configuration>
           <storeFilteredMetadata>true</storeFilteredMetadata>
