@@ -59,6 +59,8 @@ public class MojoHarnessTest {
 
 		myMojo.execute();
 
+		assertThat(new File("./target/apps/http-source-kafka/src/main/resources/test.txt")).exists();
+
 		Model pomModel = getModel(new File("./target/apps"));
 
 		List<Dependency> dependencies = pomModel.getDependencies();

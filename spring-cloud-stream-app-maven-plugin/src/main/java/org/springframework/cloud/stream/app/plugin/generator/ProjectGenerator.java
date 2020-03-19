@@ -29,6 +29,7 @@ import java.util.Objects;
 
 import com.samskivert.mustache.Mustache;
 import com.samskivert.mustache.Template;
+import org.apache.commons.io.FileUtils;
 
 import org.springframework.util.Assert;
 
@@ -63,12 +64,13 @@ public class ProjectGenerator {
 		// ---------------------------------
 		Assert.notEmpty(generatorProperties.getBinders(), "At least one Binder must be provided");
 		for (String binder : generatorProperties.getBinders()) {
-			generateAppProject(appParentDir, containerTemplateProperties, generatorProperties.getAppDefinition(), binder);
+			generateAppProject(appParentDir, containerTemplateProperties, generatorProperties.getAppDefinition(),
+					generatorProperties.getProjectResourcesDirectory(), binder);
 		}
 	}
 
 	private void generateAppProject(File appRootDirectory, Map<String, Object> containerTemplateProperties,
-			AppDefinition appDefinition, String binder) throws IOException {
+			AppDefinition appDefinition, File projectResourcesDirectory, String binder) throws IOException {
 
 		String appClassName = String.format("%s%s%sApplication",
 				camelCase(appDefinition.getName()),
@@ -101,8 +103,13 @@ public class ProjectGenerator {
 		copy(materialize("template/app.properties", appTemplateProperties),
 				file(appMainResourceDir, "application.properties"));
 
+		// copy the entire project's src/main/resources directory
+		if (projectResourcesDirectory != null && projectResourcesDirectory.exists()) {
+			FileUtils.copyDirectory(projectResourcesDirectory, appMainResourceDir);
+		}
+
 		copy(materialize("template/App.java", appTemplateProperties),
-				file(appMainSrcDir, appClassName + ".java"));
+					file(appMainSrcDir, appClassName + ".java"));
 
 		// TESTS
 		File appTestSrcDir = mkdirs(pkgToDir(appDir, "src.test.java." + appPackageName));

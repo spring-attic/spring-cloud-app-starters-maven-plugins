@@ -43,6 +43,11 @@ public class ProjectGeneratorProperties {
 	 */
 	private List<String> binders;
 
+	/**
+	 * The location of a project's src/main/resources directory.
+	 */
+	private File projectResourcesDirectory;
+
 	public File getOutputFolder() {
 		return outputFolder;
 	}
@@ -73,5 +78,13 @@ public class ProjectGeneratorProperties {
 
 	public void setBinders(List<String> binders) {
 		this.binders = binders;
+	}
+
+	public File getProjectResourcesDirectory() {
+		return projectResourcesDirectory;
+	}
+
+	public void setProjectResourcesDirectory(File projectResourcesDirectory) {
+		this.projectResourcesDirectory = projectResourcesDirectory;
 	}
 }

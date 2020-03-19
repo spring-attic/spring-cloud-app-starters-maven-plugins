@@ -16,12 +16,16 @@
 package org.springframework.cloud.stream.app.plugin;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
@@ -34,6 +38,7 @@ import org.springframework.cloud.stream.app.plugin.generator.AppBom;
 import org.springframework.cloud.stream.app.plugin.generator.AppDefinition;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGenerator;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGeneratorProperties;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -42,8 +47,16 @@ import org.springframework.util.StringUtils;
 @Mojo(name = "generate-app")
 public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
+	private static final String WHITELIST_FILE_NAME = "dataflow-configuration-metadata-whitelist.properties";
+	private static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
+	private static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
+
+
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
+
+	@Parameter(defaultValue = "${project.resources[0].directory}", readonly = true, required = true)
+	private File projectResourcesDir;
 
 	@Parameter(defaultValue = "Docker", required = true)
 	private AppDefinition.ContainerImageFormat containerImageFormat;
@@ -73,10 +86,10 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	List<String> additionalAppProperties;
 
 	@Parameter
-	List<String> metadataSourceTypeFilters;
+	List<String> metadataSourceTypeFilters = new ArrayList<>();
 
 	@Parameter
-	List<String> metadataNameFilters;
+	List<String> metadataNameFilters = new ArrayList<>();
 
 	@Parameter
 	List<Dependency> boms = new ArrayList<>();
@@ -113,8 +126,15 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		app.setVersion(this.generatedProjectVersion);
 		app.setFunctionClass(this.configClass);
 
-		app.setMetadataSourceTypeFilters(this.metadataSourceTypeFilters);
-		app.setMetadataNameFilters(this.metadataNameFilters);
+		this.populateWhitelistFromFile(this.metadataSourceTypeFilters, this.metadataNameFilters);
+
+		if (!CollectionUtils.isEmpty(this.metadataSourceTypeFilters)) {
+			app.setMetadataSourceTypeFilters(this.metadataSourceTypeFilters);
+		}
+
+		if (!CollectionUtils.isEmpty(this.metadataNameFilters)) {
+			app.setMetadataNameFilters(this.metadataNameFilters);
+		}
 
 		app.setAdditionalProperties(this.additionalAppProperties);
 
@@ -122,11 +142,10 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		app.setMavenManagedDependencies(this.boms.stream()
 				.filter(Objects::nonNull)
 				.map(dependency -> {
-							dependency.setScope("import");
-							dependency.setType("pom");
-							return dependency;
-						}
-				)
+					dependency.setScope("import");
+					dependency.setType("pom");
+					return dependency;
+				})
 				.map(MavenXmlWriter::toXml)
 				.map(xml -> MavenXmlWriter.indent(xml, 12))
 				.collect(Collectors.toList()));
@@ -160,12 +179,49 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		generatorProperties.setOutputFolder(new File(this.generatedProjectHome));
 		generatorProperties.setAppBom(appBom);
 		generatorProperties.setAppDefinition(app);
+		generatorProperties.setProjectResourcesDirectory(this.projectResourcesDir);
 
 		try {
 			new ProjectGenerator().generate(generatorProperties);
 		}
 		catch (IOException e) {
 			throw new MojoFailureException("Project generation failure");
+		}
+	}
+
+	/**
+	 * If the META-INF/dataflow-configuration-metadata-whitelist.properties is provided in the source project, add
+	 * its type and name filters to the existing withe-list configurations.
+	 * @param sourceTypeFilters existing source type filters configured via the mojo parameter.
+	 * @param nameFilters existing name filters configured via the mojo parameter.
+	 */
+	private void populateWhitelistFromFile(List<String> sourceTypeFilters, List<String> nameFilters) {
+		if (this.projectResourcesDir == null || !projectResourcesDir.exists()) {
+			return;
+		}
+		File whitelistPropertiesFile = FileUtils.getFile(projectResourcesDir, "META-INF", WHITELIST_FILE_NAME);
+		if (whitelistPropertiesFile.exists()) {
+			Properties properties = new Properties();
+			try (InputStream is = new FileInputStream(whitelistPropertiesFile)) {
+				properties.load(is);
+				addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), sourceTypeFilters);
+				addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), nameFilters);
+			}
+			catch (Exception e) {
+				//best effort
+			}
+		}
+	}
+
+	private void addToFilters(String csvFilterProperties, List<String> filterList) {
+		if (!StringUtils.isEmpty(csvFilterProperties)) {
+			for (String filterProperty : csvFilterProperties.trim().split(",")) {
+				if (StringUtils.hasText(filterProperty)) {
+					if (!filterList.contains(filterProperty.trim())) {
+						filterList.add(filterProperty.trim());
+					}
+				}
+			}
 		}
 	}
 }
