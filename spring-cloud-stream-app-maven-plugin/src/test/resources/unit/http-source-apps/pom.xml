@@ -165,14 +165,17 @@
 				<configuration>
 					<generatedProjectHome>./target/apps</generatedProjectHome>
 
-					<containerImageOrgName>testspringcloud</containerImageOrgName>
+					<containerImage>
+						<orgName>testspringcloud</orgName>
+						<enableMetadata>true</enableMetadata>
+					</containerImage>
 
-					<enableContainerImageMetadata>true</enableContainerImageMetadata>
-
-					<!-- BOM -->
-
-					<generatedProjectVersion>${project.version}</generatedProjectVersion>
-					<configClass>io.pivotal.java.function.http.supplier.HttpSupplierConfiguration.class</configClass>
+					<generatedApp>
+						<name>http</name>
+						<type>source</type>
+						<version>${project.version}</version>
+						<configClass>io.pivotal.java.function.http.supplier.HttpSupplierConfiguration.class</configClass>
+					</generatedApp>
 
 					<dependencies>
 						<dependency>
@@ -182,14 +185,10 @@
 						</dependency>
 					</dependencies>
 
-					<generatedAppName>http</generatedAppName>
-					<generatedAppType>source</generatedAppType>
-
 					<additionalAppProperties>
 						<additionalAppProperty>spring.main.web-application-type=reactive</additionalAppProperty>
 						<additionalAppPropertiy>spring.cloud.streamapp.security.enabled=false</additionalAppPropertiy>
-						<additionalAppProperty>spring.cloud.streamapp.security.csrf-enabled=false
-						</additionalAppProperty>
+						<additionalAppProperty>spring.cloud.streamapp.security.csrf-enabled=false</additionalAppProperty>
 					</additionalAppProperties>
 
 					<metadataSourceTypeFilters>

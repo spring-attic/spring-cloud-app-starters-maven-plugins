@@ -18,14 +18,11 @@ package org.springframework.cloud.stream.app.plugin;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Model;
@@ -58,11 +55,19 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 
 	@Before
 	public void before() throws NoSuchFieldException {
-		setMojoProperty("generatedProjectVersion", "3.0.0.BUILD-SNAPSHOT");
-		setMojoProperty("configClass", "io.pivotal.java.function.log.consumer.LogConsumerConfiguration.class");
 
-		setMojoProperty("generatedAppName", "log");
-		setMojoProperty("generatedAppType", AppDefinition.AppType.sink);
+		SpringCloudStreamAppGeneratorMojo.ContainerImage containerImage = new SpringCloudStreamAppGeneratorMojo.ContainerImage();
+		containerImage.setFormat(AppDefinition.ContainerImageFormat.Docker);
+
+		setMojoProperty("containerImage", containerImage);
+
+		SpringCloudStreamAppGeneratorMojo.GeneratedApp generatedApp = new SpringCloudStreamAppGeneratorMojo.GeneratedApp();
+		generatedApp.setName("log");
+		generatedApp.setType(AppDefinition.AppType.sink);
+		generatedApp.setVersion("3.0.0.BUILD-SNAPSHOT");
+		generatedApp.setConfigClass("io.pivotal.java.function.log.consumer.LogConsumerConfiguration.class");
+
+		setMojoProperty("generatedApp", generatedApp);
 
 		setMojoProperty("metadataSourceTypeFilters", Arrays.asList("io.pivotal.java.function.log.consumer.LogConsumerProperties"));
 		setMojoProperty("metadataNameFilters", Arrays.asList("server.port"));
@@ -77,7 +82,6 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 		dep.setVersion("1.0.0.BUILD-SNAPSHOT");
 		setMojoProperty("dependencies", Arrays.asList(dep));
 
-		setMojoProperty("containerImageFormat", AppDefinition.ContainerImageFormat.Docker);
 
 		setMojoProperty("binders", Arrays.asList("kafka", "rabbit"));
 
@@ -93,7 +97,9 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 	public void testWithDisabledContainerMetadata() throws Exception {
 
 		// disable metadata in container image (Default)
-		setMojoProperty("enableContainerImageMetadata", false);
+		SpringCloudStreamAppGeneratorMojo.ContainerImage containerImage = new SpringCloudStreamAppGeneratorMojo.ContainerImage();
+		containerImage.setEnableMetadata(false);
+		setMojoProperty("containerImage", containerImage);
 
 		this.springCloudStreamAppMojo.execute();
 
@@ -117,7 +123,9 @@ public class SpringCloudStreamAppGeneratorMojoTest {
 	public void testDefaultProjectCreationByPlugin() throws Exception {
 
 		// Enable Metadata in Container Image!
-		setMojoProperty("enableContainerImageMetadata", true);
+		SpringCloudStreamAppGeneratorMojo.ContainerImage containerImage = new SpringCloudStreamAppGeneratorMojo.ContainerImage();
+		containerImage.setEnableMetadata(true);
+		setMojoProperty("containerImage", containerImage);
 
 		this.springCloudStreamAppMojo.execute();
 

@@ -125,7 +125,7 @@
 					</to>
 					<container>
 						<creationTime>USE_CURRENT_TIMESTAMP</creationTime>
-						<format>Docker</format>
+						<format>{{app.containerImageFormat}}</format>
 						{{#app.enableContainerImageMetadata}}
 						<labels>
 							<org.springframework.cloud.dataflow.spring-configuration-metadata.json>

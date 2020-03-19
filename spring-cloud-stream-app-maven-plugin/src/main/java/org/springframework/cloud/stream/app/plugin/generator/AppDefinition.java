@@ -33,6 +33,8 @@ public class AppDefinition {
 
 	private String version;
 
+	private String configClass;
+
 	private List<String> metadataSourceTypeFilters = new ArrayList<>();
 
 	private List<String> metadataNameFilters = new ArrayList<>();
@@ -44,8 +46,6 @@ public class AppDefinition {
 	private List<String> mavenDependencies = new ArrayList<>();
 
 	private List<String> mavenPlugins = new ArrayList<>();
-
-	private String functionClass;
 
 	/**
 	 * Allow to generate either Docker or OCI image formats
@@ -129,12 +129,12 @@ public class AppDefinition {
 		return type == AppType.processor;
 	}
 
-	public String getFunctionClass() {
-		return functionClass;
+	public String getConfigClass() {
+		return configClass;
 	}
 
-	public void setFunctionClass(String functionClass) {
-		this.functionClass = functionClass;
+	public void setConfigClass(String configClass) {
+		this.configClass = configClass;
 	}
 
 	public List<String> getMetadataSourceTypeFilters() {

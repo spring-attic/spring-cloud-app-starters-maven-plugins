@@ -51,6 +51,75 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	private static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 	private static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
+	public static class GeneratedApp {
+
+		private String name;
+		private String version;
+		private AppDefinition.AppType type;
+		private String configClass;
+
+		public String getName() {
+			return name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		public String getVersion() {
+			return version;
+		}
+
+		public void setVersion(String version) {
+			this.version = version;
+		}
+
+		public AppDefinition.AppType getType() {
+			return type;
+		}
+
+		public void setType(AppDefinition.AppType type) {
+			this.type = type;
+		}
+
+		public String getConfigClass() {
+			return configClass;
+		}
+
+		public void setConfigClass(String configClass) {
+			this.configClass = configClass;
+		}
+	}
+
+	public static class ContainerImage {
+		private AppDefinition.ContainerImageFormat format = AppDefinition.ContainerImageFormat.Docker;
+		private String orgName = "springcloudstream";
+		private boolean enableMetadata = true;
+
+		public AppDefinition.ContainerImageFormat getFormat() {
+			return format;
+		}
+
+		public void setFormat(AppDefinition.ContainerImageFormat format) {
+			this.format = format;
+		}
+
+		public String getOrgName() {
+			return orgName;
+		}
+
+		public void setOrgName(String orgName) {
+			this.orgName = orgName;
+		}
+
+		public boolean isEnableMetadata() {
+			return enableMetadata;
+		}
+
+		public void setEnableMetadata(boolean enableMetadata) {
+			this.enableMetadata = enableMetadata;
+		}
+	}
 
 	@Parameter(defaultValue = "${project}", readonly = true, required = true)
 	private MavenProject project;
@@ -58,29 +127,14 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project.resources[0].directory}", readonly = true, required = true)
 	private File projectResourcesDir;
 
-	@Parameter(defaultValue = "Docker", required = true)
-	private AppDefinition.ContainerImageFormat containerImageFormat;
-
-	@Parameter(defaultValue = "springcloudstream")
-	private String containerImageOrgName;
-
-	@Parameter(defaultValue = "false")
-	private boolean enableContainerImageMetadata;
-
 	@Parameter(defaultValue = "./apps", required = true)
 	private String generatedProjectHome;
 
-	@Parameter(required = true)
-	private String generatedProjectVersion; // "3.0.0.BUILD-SNAPSHOT"
+	@Parameter
+	private ContainerImage containerImage = new ContainerImage();
 
 	@Parameter(required = true)
-	private String generatedAppName;
-
-	@Parameter(required = true)
-	private AppDefinition.AppType generatedAppType;
-
-	@Parameter(required = true)
-	String configClass;
+	private GeneratedApp generatedApp;
 
 	@Parameter
 	List<String> additionalAppProperties;
@@ -121,10 +175,10 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 				.withAppMetadataMavenPluginVersion(this.appMetadataMavenPluginVersion);
 
 		AppDefinition app = new AppDefinition();
-		app.setName(this.generatedAppName);
-		app.setType(this.generatedAppType);
-		app.setVersion(this.generatedProjectVersion);
-		app.setFunctionClass(this.configClass);
+		app.setName(this.generatedApp.getName());
+		app.setType(this.generatedApp.getType());
+		app.setVersion(this.generatedApp.getVersion());
+		app.setConfigClass(this.generatedApp.getConfigClass());
 
 		this.populateWhitelistFromFile(this.metadataSourceTypeFilters, this.metadataNameFilters);
 
@@ -165,13 +219,13 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 				.collect(Collectors.toList()));
 
 		// Container Image configuration
-		app.setContainerImageFormat(this.containerImageFormat);
-		app.setEnableContainerImageMetadata(this.enableContainerImageMetadata);
-		if (StringUtils.hasText(this.containerImageOrgName)) {
-			app.setContainerImageOrgName(this.containerImageOrgName);
+		app.setContainerImageFormat(this.containerImage.getFormat());
+		app.setEnableContainerImageMetadata(this.containerImage.isEnableMetadata());
+		if (StringUtils.hasText(this.containerImage.getOrgName())) {
+			app.setContainerImageOrgName(this.containerImage.getOrgName());
 		}
 
-		app.setContainerImageTag(this.generatedProjectVersion);
+		app.setContainerImageTag(this.generatedApp.getVersion());
 
 		// Generator Properties
 		ProjectGeneratorProperties generatorProperties = new ProjectGeneratorProperties();
@@ -182,7 +236,7 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		generatorProperties.setProjectResourcesDirectory(this.projectResourcesDir);
 
 		try {
-			new ProjectGenerator().generate(generatorProperties);
+			ProjectGenerator.getInstance().generate(generatorProperties);
 		}
 		catch (IOException e) {
 			throw new MojoFailureException("Project generation failure");

@@ -38,6 +38,13 @@ import org.springframework.util.Assert;
  */
 public class ProjectGenerator {
 
+	private ProjectGenerator() {
+	}
+
+	public static ProjectGenerator getInstance() {
+		return new ProjectGenerator();
+	}
+
 	public void generate(ProjectGeneratorProperties generatorProperties) throws IOException {
 
 		Map<String, Object> containerTemplateProperties = new HashMap<>();

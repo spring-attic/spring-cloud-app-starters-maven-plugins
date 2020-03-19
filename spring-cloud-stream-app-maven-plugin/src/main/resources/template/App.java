@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Import;
 
 
 @SpringBootApplication
-@Import({{app.functionClass}})
+@Import({{app.configClass}})
 public class {{app-class-name}} {
 
 	public static void main(String[] args) {
