@@ -7,47 +7,82 @@ mvn clean package [Requires JDK 8]
 
 == Sample Configuration for generating spring cloud stream apps
 
-Full configuration for Spring Cloud Stream Apps can be found here:
-https://github.com/spring-cloud/spring-cloud-stream-app-starters/blob/master/spring-cloud-stream-app-generator/pom.xml
-
-and for Spring Cloud Task Apps it is at:
-
-https://github.com/spring-cloud/spring-cloud-task-app-starters/blob/master/spring-cloud-task-app-generator/pom.xml
-
 [source, xml]
 ----
     <plugin>
         <groupId>org.springframework.cloud.stream.app.plugin</groupId>
         <artifactId>spring-cloud-stream-app-maven-plugin</artifactId>
-        <version>1.0.0.BUILD-SNAPSHOT</version>
-            <configuration>
-                <generatedProjectHome>/tmp</generatedProjectHome>
-                <generatedProjectVersion>${project.version}</generatedProjectVersion>
-                <applicationType>stream</applicationType>
+        <version>2.0.1.BUILD-SNAPSHOT</version>
+        <configuration>
+            <javaVersion>1.8</javaVersion>
+            <bootVersion>${spring-boot.version}</bootVersion>
+            <metadataPluginVersion>${app-metadata-maven-plugin-version}</metadataPluginVersion>
+            <additionalBoms>
                 <bom>
-                    <name>scs-bom</name>
+                    <name>app-starters-core-dependencies</name>
                     <groupId>org.springframework.cloud.stream.app</groupId>
-                    <artifactId>spring-cloud-stream-app-dependencies</artifactId>
-                    <version>${project.version}</version>
+                    <artifactId>app-starters-core-dependencies</artifactId>
+                    <version>${app-starters-core-dependencies.version}</version>
                 </bom>
-
-                <binders>
-                    <kafka />
-                    <rabbit />
-                </binders>
-                <generatedApps>
-                <time-source />
-                    <transform-processor />
-                    <trigger-source />
-                    <file-sink />
-                </generatedApps>
-            </configuration>
+            </additionalBoms>
+            <binders>
+                <kafka/>
+                <rabbit/>
+            </binders>
+            <generatedApp>
+                <name>counter</name>
+                <type>sink</type>
+                <version>${project.version}</version>
+                <configClass>io.pivotal.java.function.counter.consumer.CounterConsumerConfiguration.class</configClass>
+                <functionDefinition>counterConsumer</functionDefinition>
+            </generatedApp>
+            <globalAppProperties>
+                <globalAppProperty>spring.cloud.stream.propagateOriginalContentType=false</globalAppProperty>
+            </globalAppProperties>
+            <dependencies>
+                <dependency>
+                    <groupId>io.pivotal.java.function</groupId>
+                    <artifactId>counter-consumer</artifactId>
+                    <version>${java-functions.version}</version>
+                </dependency>
+            </dependencies>
+            <additionalGlobalDependencies>
+                <dependency>
+                    <groupId>org.springframework.cloud.stream.app</groupId>
+                    <artifactId>app-starters-security-common</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-starter-config</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.cloud.stream.app</groupId>
+                    <artifactId>app-starters-micrometer-common</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-registry-influx</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>io.micrometer</groupId>
+                    <artifactId>micrometer-registry-prometheus</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-cloudfoundry-connector</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-spring-service-connector</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>io.micrometer.prometheus</groupId>
+                    <artifactId>prometheus-rsocket-spring</artifactId>
+                </dependency>
+            </additionalGlobalDependencies>
+        </configuration>
     </plugin>
 ----
-
-Binders are only applicable for spring cloud stream apps. They are not required for spring cloud task apps.
-
-Application type must be *stream* and *task* for stream and task apps respectively.
 
 The bom for stream apps is specified in spring-cloud-stream-app-dependencies
 (group id: org.springframework.cloud.stream.app)

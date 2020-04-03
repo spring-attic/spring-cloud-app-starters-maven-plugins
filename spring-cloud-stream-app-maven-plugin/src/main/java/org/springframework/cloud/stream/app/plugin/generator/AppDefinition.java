@@ -35,6 +35,8 @@ public class AppDefinition {
 
 	private String configClass;
 
+	private String functionDefinition;
+
 	private List<String> metadataSourceTypeFilters = new ArrayList<>();
 
 	private List<String> metadataNameFilters = new ArrayList<>();
@@ -183,5 +185,13 @@ public class AppDefinition {
 
 	public void setContainerImageTag(String containerImageTag) {
 		this.containerImageTag = containerImageTag;
+	}
+
+	public String getFunctionDefinition() {
+		return functionDefinition;
+	}
+
+	public void setFunctionDefinition(String functionDefinition) {
+		this.functionDefinition = functionDefinition;
 	}
 }

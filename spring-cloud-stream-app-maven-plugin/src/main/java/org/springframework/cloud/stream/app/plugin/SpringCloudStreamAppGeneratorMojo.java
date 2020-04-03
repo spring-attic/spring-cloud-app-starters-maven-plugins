@@ -57,6 +57,7 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		private String version;
 		private AppDefinition.AppType type;
 		private String configClass;
+		private String functionDefinition;
 
 		public String getName() {
 			return name;
@@ -88,6 +89,27 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
 		public void setConfigClass(String configClass) {
 			this.configClass = configClass;
+		}
+
+		public String getFunctionDefinition() {
+			return (!StringUtils.isEmpty(this.functionDefinition)) ? this.functionDefinition :
+					this.name + this.functionType();
+		}
+
+		public void setFunctionDefinition(String functionDefinition) {
+			this.functionDefinition = functionDefinition;
+		}
+
+		private String functionType() {
+			switch (this.type) {
+			case processor:
+				return "Function";
+			case sink:
+				return "Consumer";
+			case source:
+				return "Supplier";
+			}
+			throw new IllegalArgumentException("Unknown App type:" + this.type);
 		}
 	}
 
@@ -179,6 +201,7 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		app.setType(this.generatedApp.getType());
 		app.setVersion(this.generatedApp.getVersion());
 		app.setConfigClass(this.generatedApp.getConfigClass());
+		app.setFunctionDefinition(this.generatedApp.getFunctionDefinition());
 
 		this.populateWhitelistFromFile(this.metadataSourceTypeFilters, this.metadataNameFilters);
 
