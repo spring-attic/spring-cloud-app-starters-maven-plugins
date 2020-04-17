@@ -9,7 +9,7 @@
 		<relativePath/>
 	</parent>
 	<artifactId>spring-cloud-app-starter-doc-maven-plugin</artifactId>
-	<version>3.0.0.BUILD-SNAPSHOT</version>
+	<version>3.0.0.M1</version>
 	<packaging>maven-plugin</packaging>
 
 	<properties>
