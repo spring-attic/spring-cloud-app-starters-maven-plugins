@@ -28,6 +28,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -133,6 +134,43 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 		if (storeFilteredMetadata) {
 			getLog().debug("propertyClassFilter: " + metadataFilter);
+			if (metadataFilter == null ) {
+				metadataFilter = new MetadataFilter();
+			}
+			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+				String[] sourceTypes = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
+				if (sourceTypes != null && sourceTypes.length > 0) {
+					if (metadataFilter.getSourceTypes() == null) {
+						metadataFilter.setSourceTypes(new ArrayList<>());
+					}
+					for (String sourceType : sourceTypes) {
+						sourceType = sourceType.trim();
+						if (!metadataFilter.getSourceTypes().contains(sourceType)) {
+							metadataFilter.getSourceTypes().add(sourceType);
+						}
+					}
+				}
+			}
+			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
+				String[] names = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_NAMES, "").split(",");
+				if (names != null && names.length >0 ) {
+					if (metadataFilter.getNames() == null) {
+						metadataFilter.setNames(new ArrayList<>());
+					}
+					for (String name : names) {
+						name = name.trim();
+						if (!metadataFilter.getNames().contains(name)) {
+							metadataFilter.getNames().add(name);
+						}
+					}
+				}
+			}
+
+			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+				String[] sourceTypes = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
+				metadataFilter.getSourceTypes().addAll(Arrays.asList(sourceTypes));
+			}
+
 			storeFilteredMetadata();
 		}
 	}
