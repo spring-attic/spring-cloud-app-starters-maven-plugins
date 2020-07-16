@@ -96,6 +96,12 @@ public class ProjectGenerator {
 		appTemplateProperties.put("app-package-name", appPackageName);
 		appTemplateProperties.put("app-binder", binder);
 
+		if("pubsub".equals(binder)) {
+			appTemplateProperties.put("app-binder-artifact", "spring-cloud-gcp-pubsub-stream-binder");
+		} else {
+			appTemplateProperties.put("app-binder-artifact", "spring-cloud-stream-binder-" + binder);
+		}
+
 		// app POM
 		File appDir =
 				mkdirs(file(appRootDirectory, appDefinition.getName() + "-" + appDefinition.getType() + "-" + binder));
