@@ -27,6 +27,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -34,12 +37,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.jar.JarOutputStream;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
-
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -50,7 +53,6 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
-
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
 import org.springframework.boot.configurationprocessor.metadata.ItemHint;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
@@ -78,8 +80,9 @@ import static org.springframework.boot.configurationprocessor.metadata.ItemHint.
 public class MetadataAggregationMojo extends AbstractMojo {
 
 	static final String METADATA_PATH = "META-INF/spring-configuration-metadata.json";
-	static final String WHITELIST_PATH = "META-INF/dataflow-configuration-metadata-whitelist.properties";
-	static final String BACKUP_WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
+	static final String VISIBLE_PROPERTIES_PATH = "META-INF/dataflow-configuration-metadata.properties";
+	static final String DEPRECATED_WHITELIST_PATH = "META-INF/dataflow-configuration-metadata-whitelist.properties";
+	static final String DEPRECATED_BACKUP_WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
 	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
@@ -130,7 +133,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	}
 
 	public void execute() throws MojoExecutionException {
-		Result result = new Result(gatherConfigurationMetadata(null), gatherWhiteListMetadata());
+		Result result = new Result(gatherConfigurationMetadata(null), gatherVisibleMetadata());
 		produceArtifact(result);
 
 		if (storeFilteredMetadata) {
@@ -138,8 +141,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			if (metadataFilter == null) {
 				metadataFilter = new MetadataFilter();
 			}
-			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
-				String[] sourceTypes = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
+			if (result.visible.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+				String[] sourceTypes = result.visible.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
 				if (sourceTypes != null && sourceTypes.length > 0) {
 					if (metadataFilter.getSourceTypes() == null) {
 						metadataFilter.setSourceTypes(new ArrayList<>());
@@ -152,8 +155,9 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					}
 				}
 			}
-			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
-				String[] names = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_NAMES, "").split(",");
+
+			if (result.visible.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
+				String[] names = result.visible.getProperty(CONFIGURATION_PROPERTIES_NAMES, "").split(",");
 				if (names != null && names.length > 0) {
 					if (metadataFilter.getNames() == null) {
 						metadataFilter.setNames(new ArrayList<>());
@@ -167,8 +171,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 				}
 			}
 
-			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
-				String[] sourceTypes = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
+			if (result.visible.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
+				String[] sourceTypes = result.visible.getProperty(CONFIGURATION_PROPERTIES_CLASSES, "").split(",");
 				metadataFilter.getSourceTypes().addAll(Arrays.asList(sourceTypes));
 			}
 
@@ -184,16 +188,15 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	/*default*/ static class Result {
 		private final ConfigurationMetadata metadata;
 
-		private final Properties whitelist;
+		private final Properties visible;
 
-		private Result(ConfigurationMetadata metadata, Properties whitelist) {
+		private Result(ConfigurationMetadata metadata, Properties visible) {
 			this.metadata = metadata;
-			this.whitelist = whitelist;
+			this.visible = visible;
 		}
 	}
 
 	/**
-	 *
 	 * Store pre-filtered and json-escaped metadata into a property file.
 	 */
 	private void storeFilteredMetadata() throws MojoExecutionException {
@@ -205,8 +208,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			ConfigurationMetadata metadata = gatherConfigurationMetadata(metadataFilter);
 			String escapedJson = StringEscapeUtils.escapeJson(toJson(metadata));
 			fileWriter.write("org.springframework.cloud.dataflow.spring.configuration.metadata.json=" + escapedJson);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new MojoExecutionException("Error creating file ", e);
 		}
 	}
@@ -226,45 +228,48 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	/**
 	 * Read all existing metadata from this project runtime dependencies and merge them in a single object.
 	 */
-	/*default*/ Properties gatherWhiteListMetadata() throws MojoExecutionException {
-		Properties whiteList = new Properties();
+	/*default*/ Properties gatherVisibleMetadata() throws MojoExecutionException {
+		Properties visible = new Properties();
 		try {
 			for (String path : mavenProject.getRuntimeClasspathElements()) {
-				File file = new File(path);
-				if (file.isDirectory()) {
-					File localWhiteList = new File(file, WHITELIST_PATH);
-					if (localWhiteList.canRead()) {
-						whiteList = getWhitelistFromFile(whiteList, path, localWhiteList);
-					}
-					else {
-						File backupWhitelist = new File(file, BACKUP_WHITELIST_PATH);
-						if (backupWhitelist.canRead()) {
-							whiteList = getWhitelistFromFile(whiteList, path, backupWhitelist);
-						}
-					}
-				}
-				else {
-					try (ZipFile zipFile = new ZipFile(file)) {
+				if (Files.isDirectory(Paths.get(path))) {
+					for (String visibleProperties: new String[]{VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH, DEPRECATED_BACKUP_WHITELIST_PATH}) {
+						Optional<Properties> properties;
+						properties = getVisibleFromFile(Paths.get(path, visibleProperties));
+						if (properties.isPresent()) {
+							if (!visibleProperties.equals(VISIBLE_PROPERTIES_PATH)) {
+								getLog().warn("Use of " + visibleProperties + " is deprecated." +
+										" Please use " + VISIBLE_PROPERTIES_PATH);
 
-						ZipEntry entry = zipFile.getEntry(WHITELIST_PATH);
-						if (entry != null) {
-							whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
+							}
+							visible = properties.get();
+							break;
 						}
-						else {
-							entry = zipFile.getEntry(BACKUP_WHITELIST_PATH);
+					}
+			} else {
+					try (ZipFile zipFile = new ZipFile(new File(path))) {
+
+						ZipEntry entry;
+						for (String zipEntry: new String[]{VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH, DEPRECATED_BACKUP_WHITELIST_PATH}) {
+							entry = zipFile.getEntry(zipEntry);
 							if (entry != null) {
-								whiteList = getWhitelistFromZipFile(whiteList, path, zipFile, entry);
+								if (!zipEntry.equals(VISIBLE_PROPERTIES_PATH)) {
+									getLog().warn("Use of " + zipEntry + " is deprecated." +
+											" Please use " + VISIBLE_PROPERTIES_PATH);
+								}
+								visible = getVisibleFromZipFile(visible, path, zipFile, entry);
+								break;
 							}
 						}
 					}
 				}
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
-		return whiteList;
+		return visible;
 	}
+
 
 	/*default*/ ConfigurationMetadata gatherConfigurationMetadata(MetadataFilter metadataFilters) throws MojoExecutionException {
 		ConfigurationMetadata metadata = new ConfigurationMetadata();
@@ -282,8 +287,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							metadata.merge(depMetadata);
 						}
 					}
-				}
-				else {
+				} else {
 					try (ZipFile zipFile = new ZipFile(file)) {
 						ZipEntry entry = zipFile.getEntry(METADATA_PATH);
 						if (entry != null) {
@@ -305,8 +309,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					}
 				});
 			}
-		}
-		catch (Exception e) {
+		} catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
 		return metadata;
@@ -326,24 +329,24 @@ public class MetadataAggregationMojo extends AbstractMojo {
 				Collections.EMPTY_LIST : metadataFilters.getNames();
 
 		ConfigurationMetadata filteredMetadata = new ConfigurationMetadata();
-		List<String> whitelistedNames = new ArrayList<>();
+		List<String> visibleNames = new ArrayList<>();
 		for (ItemMetadata itemMetadata : metadata.getItems()) {
 			String metadataName = itemMetadata.getName();
 			String metadataSourceType = itemMetadata.getSourceType();
 			if (StringUtils.hasText(metadataSourceType) && sourceTypeFilters.contains(metadataSourceType.trim())) {
 				filteredMetadata.add(itemMetadata);
-				whitelistedNames.add(itemMetadata.getName());
+				visibleNames.add(itemMetadata.getName());
 			}
 			if (StringUtils.hasText(metadataName) && nameFilters.contains(metadataName.trim())) {
 				filteredMetadata.add(itemMetadata);
-				whitelistedNames.add(itemMetadata.getName());
+				visibleNames.add(itemMetadata.getName());
 			}
 
 		}
 
-		// copy the hits only for the whitelisted metadata.
+		// copy the hits only for the visible metadata.
 		for (ItemHint itemHint : metadata.getHints()) {
-			if (itemHint != null && whitelistedNames.contains(itemHint.getName())) {
+			if (itemHint != null && visibleNames.contains(itemHint.getName())) {
 				filteredMetadata.add(itemHint);
 			}
 		}
@@ -351,36 +354,43 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		return filteredMetadata;
 	}
 
-	private Properties getWhitelistFromZipFile(Properties whiteList, String path, ZipFile zipFile, ZipEntry entry) throws IOException {
+	private Properties getVisibleFromZipFile(Properties visible, String path, ZipFile zipFile, ZipEntry entry) throws IOException {
 		try (InputStream inputStream = zipFile.getInputStream(entry)) {
-			getLog().debug("Merging whitelist from " + path);
-			whiteList = merge(whiteList, inputStream);
+			getLog().debug("Merging visible metadata from " + path);
+			visible = merge(visible, inputStream);
 		}
-		return whiteList;
+		return visible;
 	}
 
-	private Properties getWhitelistFromFile(Properties whiteList, String path, File localWhiteList) throws IOException {
-		try (InputStream is = new FileInputStream(localWhiteList)) {
-			getLog().debug("!!!! Merging whitelist from " + path);
-			whiteList = merge(whiteList, is);
+	private Optional<Properties> getVisibleFromFile(Path visiblePropertiesPath) throws IOException {
+		File localVisible = visiblePropertiesPath.toFile();
+		if (localVisible.canRead()) {
+			Properties visible = new Properties();
+			try (InputStream is = new FileInputStream(localVisible)) {
+				getLog().debug("!!!! Merging visible metadata from " + visiblePropertiesPath.toString());
+				visible = merge(visible, is);
+				return Optional.of(visible);
+			}
 		}
-		return whiteList;
+		return Optional.empty();
 	}
 
-	Properties merge(Properties whitelist, InputStream is) throws IOException {
+	Properties merge(Properties visible, InputStream is) throws IOException {
 		Properties mergedProperties = new Properties();
 		mergedProperties.load(is);
 
 		if (!mergedProperties.containsKey(CONFIGURATION_PROPERTIES_CLASSES) && !mergedProperties.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
-			getLog().warn(String.format("Whitelist properties does not contain any required keys: %s",
-					StringUtils.arrayToCommaDelimitedString(new String[] { CONFIGURATION_PROPERTIES_CLASSES,
-							CONFIGURATION_PROPERTIES_NAMES })));
-			return whitelist;
+			getLog().warn(String.format("Visible properties does not contain any required keys: %s",
+					StringUtils.arrayToCommaDelimitedString(new String[]{
+							CONFIGURATION_PROPERTIES_CLASSES,
+							CONFIGURATION_PROPERTIES_NAMES
+					})));
+			return visible;
 		}
 
-		if (!CollectionUtils.isEmpty(whitelist)) {
-			mergeCommaDelimitedValue(whitelist, mergedProperties, CONFIGURATION_PROPERTIES_CLASSES);
-			mergeCommaDelimitedValue(whitelist, mergedProperties, CONFIGURATION_PROPERTIES_NAMES);
+		if (!CollectionUtils.isEmpty(visible)) {
+			mergeCommaDelimitedValue(visible, mergedProperties, CONFIGURATION_PROPERTIES_CLASSES);
+			mergeCommaDelimitedValue(visible, mergedProperties, CONFIGURATION_PROPERTIES_NAMES);
 		}
 
 		return mergedProperties;
@@ -391,7 +401,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			Collection<String> values = StringUtils.commaDelimitedListToSet(currentProperties.getProperty(key));
 			values.addAll(StringUtils.commaDelimitedListToSet(newProperties.getProperty(key)));
 			if (newProperties.containsKey(key)) {
-				getLog().debug(String.format("Merging whitelist property %s=%s", key, newProperties.getProperty(key)));
+				getLog().debug(String.format("Merging visible property %s=%s", key, newProperties.getProperty(key)));
 			}
 			newProperties.setProperty(key, StringUtils.collectionToCommaDelimitedString(values));
 
@@ -409,18 +419,21 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			jos.putNextEntry(entry);
 			jsonMarshaller.write(result.metadata, jos);
 
-			entry = new ZipEntry(WHITELIST_PATH);
+			entry = new ZipEntry(VISIBLE_PROPERTIES_PATH);
 			jos.putNextEntry(entry);
-			result.whitelist.store(jos, "Describes whitelisted properties for this app");
+			result.visible.store(jos, "Describes visible properties for this app");
 
-			entry = new ZipEntry(BACKUP_WHITELIST_PATH);
+			entry = new ZipEntry(DEPRECATED_WHITELIST_PATH);
 			jos.putNextEntry(entry);
-			result.whitelist.store(jos, "Describes whitelisted properties for this app");
+			result.visible.store(jos, "DEPRECATED: Describes visible properties for this app");
+
+			entry = new ZipEntry(DEPRECATED_BACKUP_WHITELIST_PATH);
+			jos.putNextEntry(entry);
+			result.visible.store(jos, "DEPRECATED: Describes visible properties for this app");
 
 			getLog().info(String.format("Attaching %s to current project", output.getCanonicalPath()));
 			projectHelper.attachArtifact(mavenProject, output, classifier);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new MojoExecutionException("Error writing to file", e);
 		}
 	}
@@ -477,10 +490,9 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	private ClassLoader getClassLoader(String jarPath) {
 		ClassLoader classLoader = null;
 		try {
-			classLoader = new URLClassLoader(new URL[] { new URL("file://" + jarPath) },
+			classLoader = new URLClassLoader(new URL[]{new URL("file://" + jarPath)},
 					this.getClass().getClassLoader());
-		}
-		catch (MalformedURLException e) {
+		} catch (MalformedURLException e) {
 			// pass through
 		}
 		return classLoader;

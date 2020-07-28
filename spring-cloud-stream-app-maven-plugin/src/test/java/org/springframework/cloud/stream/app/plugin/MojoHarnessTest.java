@@ -64,10 +64,13 @@ public class MojoHarnessTest {
 		Model pomModel = getModel(new File("./target/apps"));
 
 		List<Dependency> dependencies = pomModel.getDependencies();
-		assertThat(dependencies.size()).isEqualTo(14);
+		assertThat(dependencies.size()).isEqualTo(15);
 
 		assertThat(dependencies.stream()
 				.filter(d -> d.getArtifactId().equals("http-supplier")).count()).isEqualTo(1);
+
+		assertThat(dependencies.stream()
+				.filter(d -> d.getArtifactId().equals("stream-applications-postprocessor-common")).count()).isEqualTo(1);
 
 		assertThat(dependencies.stream()
 				.filter(d -> d.getArtifactId().equals("spring-cloud-stream-binder-kafka")).count()).isEqualTo(1);
