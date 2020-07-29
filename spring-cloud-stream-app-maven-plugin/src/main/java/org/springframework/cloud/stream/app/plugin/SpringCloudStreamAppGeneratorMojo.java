@@ -22,9 +22,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.stream.Collectors;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.model.Plugin;
@@ -33,7 +33,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-
 import org.springframework.cloud.stream.app.plugin.generator.AppBom;
 import org.springframework.cloud.stream.app.plugin.generator.AppDefinition;
 import org.springframework.cloud.stream.app.plugin.generator.ProjectGenerator;
@@ -43,11 +42,13 @@ import org.springframework.util.StringUtils;
 
 /**
  * @author Christian Tzolov
+ * @author David Turanski
  */
 @Mojo(name = "generate-app")
 public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
-	private static final String WHITELIST_FILE_NAME = "dataflow-configuration-metadata-whitelist.properties";
+	private static final String DEPRECATED_WHITELIST_FILE_NAME = "dataflow-configuration-metadata-whitelist.properties";
+	private static final String VISIBLE_PROPERTIES_FILE_NAME = "dataflow-configuration-metadata.properties";
 	private static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 	private static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
@@ -102,12 +103,12 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
 		private String functionType() {
 			switch (this.type) {
-			case processor:
-				return "Function";
-			case sink:
-				return "Consumer";
-			case source:
-				return "Supplier";
+				case processor:
+					return "Function";
+				case sink:
+					return "Consumer";
+				case source:
+					return "Supplier";
 			}
 			throw new IllegalArgumentException("Unknown App type:" + this.type);
 		}
@@ -203,7 +204,7 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 		app.setConfigClass(this.generatedApp.getConfigClass());
 		app.setFunctionDefinition(this.generatedApp.getFunctionDefinition());
 
-		this.populateWhitelistFromFile(this.metadataSourceTypeFilters, this.metadataNameFilters);
+		this.populateVisiblePropertiesFromFile(this.metadataSourceTypeFilters, this.metadataNameFilters);
 
 		if (!CollectionUtils.isEmpty(this.metadataSourceTypeFilters)) {
 			app.setMetadataSourceTypeFilters(this.metadataSourceTypeFilters);
@@ -260,34 +261,53 @@ public class SpringCloudStreamAppGeneratorMojo extends AbstractMojo {
 
 		try {
 			ProjectGenerator.getInstance().generate(generatorProperties);
-		}
-		catch (IOException e) {
+		} catch (IOException e) {
 			throw new MojoFailureException("Project generation failure");
 		}
 	}
 
 	/**
-	 * If the META-INF/dataflow-configuration-metadata-whitelist.properties is provided in the source project, add
-	 * its type and name filters to the existing withe-list configurations.
+	 * If the visible metadata properties file is provided in the source project, add
+	 * its type and name filters to the existing visible configurations.
+	 *
 	 * @param sourceTypeFilters existing source type filters configured via the mojo parameter.
-	 * @param nameFilters existing name filters configured via the mojo parameter.
+	 * @param nameFilters       existing name filters configured via the mojo parameter.
 	 */
-	private void populateWhitelistFromFile(List<String> sourceTypeFilters, List<String> nameFilters) {
+	private void populateVisiblePropertiesFromFile(List<String> sourceTypeFilters, List<String> nameFilters) {
 		if (this.projectResourcesDir == null || !projectResourcesDir.exists()) {
 			return;
 		}
-		File whitelistPropertiesFile = FileUtils.getFile(projectResourcesDir, "META-INF", WHITELIST_FILE_NAME);
-		if (whitelistPropertiesFile.exists()) {
-			Properties properties = new Properties();
-			try (InputStream is = new FileInputStream(whitelistPropertiesFile)) {
-				properties.load(is);
-				addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), sourceTypeFilters);
-				addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), nameFilters);
-			}
-			catch (Exception e) {
-				//best effort
-			}
+		Optional<Properties> optionalProperties =
+		loadVisiblePropertiesFromResource(FileUtils.getFile(projectResourcesDir,"META-INF", VISIBLE_PROPERTIES_FILE_NAME));
+		optionalProperties.ifPresent(properties -> {
+			addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), sourceTypeFilters);
+			addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), nameFilters);
+		});
+		if (optionalProperties.isPresent() ) {
+			return;
 		}
+
+		loadVisiblePropertiesFromResource(FileUtils.getFile(projectResourcesDir, "META-INF", DEPRECATED_WHITELIST_FILE_NAME))
+				.ifPresent( properties -> {
+					getLog().warn(DEPRECATED_WHITELIST_FILE_NAME + " is deprecated." +
+							" Please use " + VISIBLE_PROPERTIES_FILE_NAME + " instead");
+					addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_CLASSES), sourceTypeFilters);
+					addToFilters(properties.getProperty(CONFIGURATION_PROPERTIES_NAMES), nameFilters);
+				});
+	}
+
+	private Optional<Properties> loadVisiblePropertiesFromResource(File visiblePropertiesFile) {
+		if (visiblePropertiesFile.exists()) {
+			Properties properties = new Properties();
+			try (InputStream is = new FileInputStream(visiblePropertiesFile)) {
+				properties.load(is);
+
+			} catch (Exception e) {
+				return Optional.empty();
+			}
+			return Optional.of(properties);
+		}
+		return Optional.empty();
 	}
 
 	private void addToFilters(String csvFilterProperties, List<String> filterList) {

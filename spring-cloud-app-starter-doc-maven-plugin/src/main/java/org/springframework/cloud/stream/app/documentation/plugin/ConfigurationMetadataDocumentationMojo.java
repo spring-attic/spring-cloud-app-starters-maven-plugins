@@ -53,13 +53,10 @@ import org.springframework.util.StringUtils;
 
 /**
  * A maven plugin that will scan an asciidoc file for special comment markers and replace
- * everything in between with a listing of whitelisted configuration properties for a
+ * everything in between with a listing of visible configuration properties for a
  * Spring Cloud Stream/Task app.
  *
  * @author Eric Bottard
- * @see <a href=
- * "http://docs.spring.io/spring-cloud-dataflow/docs/1.1.0.M2/reference/html/spring-cloud-dataflow-register-apps.html#spring-cloud-dataflow-stream-app-whitelisting">Whitelisting
- * Properties</a>
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {

@@ -45,7 +45,7 @@
     <maven.version>3.6.3</maven.version>
     <maven.plugin.version>3.6.0</maven.plugin.version>
     <jmustache.version>1.15</jmustache.version>
-    <sprign.version>5.2.3.RELEASE</sprign.version>
+    <spring.version>5.2.3.RELEASE</spring.version>
   </properties>
 
   <scm>
@@ -88,7 +88,7 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
-      <version>${sprign.version}</version>
+      <version>${spring.version}</version>
     </dependency>
 
     <dependency>
