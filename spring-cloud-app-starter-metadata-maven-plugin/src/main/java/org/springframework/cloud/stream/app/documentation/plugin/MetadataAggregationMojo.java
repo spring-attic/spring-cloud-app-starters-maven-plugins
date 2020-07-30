@@ -410,13 +410,17 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			jos.putNextEntry(entry);
 			jsonMarshaller.write(result.metadata, jos);
 
-			entry = new ZipEntry(DEPRECATED_WHITELIST_PATH);
+			entry = new ZipEntry(VISIBLE_PROPERTIES_PATH);
 			jos.putNextEntry(entry);
 			result.visible.store(jos, "Describes visible properties for this app");
 
+			entry = new ZipEntry(DEPRECATED_WHITELIST_PATH);
+			jos.putNextEntry(entry);
+			result.visible.store(jos, "DEPRECATED: Describes visible properties for this app");
+
 			entry = new ZipEntry(DEPRECATED_BACKUP_WHITELIST_PATH);
 			jos.putNextEntry(entry);
-			result.visible.store(jos, "Describes visible properties for this app");
+			result.visible.store(jos, "DEPRECATED: Describes visible properties for this app");
 
 			getLog().info(String.format("Attaching %s to current project", output.getCanonicalPath()));
 			projectHelper.attachArtifact(mavenProject, output, classifier);

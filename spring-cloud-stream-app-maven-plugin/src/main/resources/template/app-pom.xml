@@ -56,7 +56,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.cloud.stream.app</groupId>
-			<artifactId>stream-apps-postprocessor-common</artifactId>
+			<artifactId>stream-applications-postprocessor-common</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

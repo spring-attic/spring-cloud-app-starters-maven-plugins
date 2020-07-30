@@ -41,7 +41,7 @@ public class SpringMetadataTask extends Jar {
 
 	private File configurationMdFile;
 	private File propsFile;
-	private File mdDir;H
+	private File mdDir;
 
 	public SpringMetadataTask() {
 		setClassifier("metadata");

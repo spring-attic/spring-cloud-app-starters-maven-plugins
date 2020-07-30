@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.Manifest;
 
 import org.apache.maven.artifact.Artifact;
@@ -48,6 +49,7 @@ import org.springframework.boot.loader.archive.ExplodedArchive;
 import org.springframework.boot.loader.archive.JarFileArchive;
 import org.springframework.cloud.dataflow.configuration.metadata.BootApplicationConfigurationMetadataResolver;
 import org.springframework.cloud.dataflow.configuration.metadata.BootClassLoaderFactory;
+import org.springframework.cloud.dataflow.configuration.metadata.container.ContainerImageMetadataResolver;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
@@ -57,11 +59,13 @@ import org.springframework.util.StringUtils;
  * Spring Cloud Stream/Task app.
  *
  * @author Eric Bottard
+ * @author David Turanski
  */
 @Mojo(name = "generate-documentation", requiresDependencyResolution = ResolutionScope.RUNTIME)
 public class ConfigurationMetadataDocumentationMojo extends AbstractMojo {
 
-	private BootApplicationConfigurationMetadataResolver metadataResolver = new BootApplicationConfigurationMetadataResolver();
+	private BootApplicationConfigurationMetadataResolver metadataResolver =
+			new BootApplicationConfigurationMetadataResolver(imageName -> null);
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;

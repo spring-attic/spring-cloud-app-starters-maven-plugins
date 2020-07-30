@@ -70,7 +70,7 @@ public class MojoHarnessTest {
 				.filter(d -> d.getArtifactId().equals("http-supplier")).count()).isEqualTo(1);
 
 		assertThat(dependencies.stream()
-				.filter(d -> d.getArtifactId().equals("stream-apps-postprocessor-common")).count()).isEqualTo(1);
+				.filter(d -> d.getArtifactId().equals("stream-applications-postprocessor-common")).count()).isEqualTo(1);
 
 		assertThat(dependencies.stream()
 				.filter(d -> d.getArtifactId().equals("spring-cloud-stream-binder-kafka")).count()).isEqualTo(1);
