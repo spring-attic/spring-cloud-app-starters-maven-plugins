@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -134,7 +135,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 		if (storeFilteredMetadata) {
 			getLog().debug("propertyClassFilter: " + metadataFilter);
-			if (metadataFilter == null ) {
+			if (metadataFilter == null) {
 				metadataFilter = new MetadataFilter();
 			}
 			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_CLASSES)) {
@@ -153,7 +154,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			}
 			if (result.whitelist.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
 				String[] names = result.whitelist.getProperty(CONFIGURATION_PROPERTIES_NAMES, "").split(",");
-				if (names != null && names.length >0 ) {
+				if (names != null && names.length > 0) {
 					if (metadataFilter.getNames() == null) {
 						metadataFilter.setNames(new ArrayList<>());
 					}
@@ -217,7 +218,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 		// Hack to workaround the https://github.com/mojohaus/properties-maven-plugin/issues/27 and
 		// https://github.com/mojohaus/properties-maven-plugin/pull/38 properties-maven-plugin issues.
-		json  = json.replaceAll("\\$\\{", "{");
+		json = json.replaceAll("\\$\\{", "{");
 
 		return json;
 	}
@@ -296,6 +297,13 @@ public class MetadataAggregationMojo extends AbstractMojo {
 						}
 					}
 				}
+
+				// Replace all escaped double quotes by a single one.
+				metadata.getItems().stream().forEach(itemMetadata -> {
+					if (!StringUtils.isEmpty(itemMetadata.getDescription()) && itemMetadata.getDescription().contains("\"")) {
+						itemMetadata.setDescription(itemMetadata.getDescription().replaceAll("\"", "'"));
+					}
+				});
 			}
 		}
 		catch (Exception e) {
