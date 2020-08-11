@@ -35,7 +35,7 @@ public class EnumHintProviderTest {
 	private JsonMarshaller jsonMarshaller = new JsonMarshaller();
 
 	@Test
-	public void test() throws IOException {
+	public void test() throws Exception {
 		ConfigurationMetadata configurationMetadata = jsonMarshaller.read(new ClassPathResource("META-INF/spring"
 			+ "-configuration-metadata.json").getInputStream());
 
