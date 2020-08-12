@@ -17,6 +17,7 @@
 		<assertj.version>3.11.1</assertj.version>
 		<commons-text.version>1.8</commons-text.version>
 		<spring.version>5.2.8.RELEASE</spring.version>
+		<snakeyaml.version>1.26</snakeyaml.version>
 	</properties>
 
 	<dependencies>
@@ -31,6 +32,16 @@
 			<artifactId>spring-core</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-core</artifactId>
