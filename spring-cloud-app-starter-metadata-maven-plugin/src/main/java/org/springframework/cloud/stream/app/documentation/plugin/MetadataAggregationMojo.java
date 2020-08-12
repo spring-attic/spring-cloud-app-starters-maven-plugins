@@ -16,7 +16,6 @@
 
 package org.springframework.cloud.stream.app.documentation.plugin;
 
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -40,9 +39,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.jar.JarOutputStream;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
 import org.apache.commons.text.StringEscapeUtils;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -53,6 +52,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
+
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
 import org.springframework.boot.configurationprocessor.metadata.ItemHint;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
@@ -71,6 +71,7 @@ import static org.springframework.boot.configurationprocessor.metadata.ItemHint.
  * @author Eric Bottard
  * @author David Turanski
  * @author Christian Tzolov
+ * @author Ilayaperumal Gopinathan
  */
 @Mojo(
 		name = "aggregate-metadata",
@@ -85,6 +86,16 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	static final String DEPRECATED_BACKUP_WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
 	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
 	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
+
+	static final String CONFIGURATION_PROPERTIES_INBOUND_PORTS = "configuration-properties.inbound-ports";
+
+	static final String CONFIGURATION_PROPERTIES_OUTBOUND_PORTS = "configuration-properties.outbound-ports";
+
+	static final String SPRING_CLOUD_FUNCTION_DEFINITION = "spring.cloud.function.definition";
+
+	static final String SPRING_CLOUD_STREAM_FUNCTION_DEFINITION = "spring.cloud.stream.function.definition";
+
+	static final String SPRING_CLOUD_STREAM_FUNCTION_BINDINGS = "spring.cloud.stream.function.bindings";
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
@@ -178,6 +189,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 			storeFilteredMetadata();
 		}
+		//Add port mapping configuration based on the application configuration.
+		addInboundOutboundPortMappingConfiguration(result.visible);
 	}
 
 	/**
@@ -213,6 +226,31 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		}
 	}
 
+
+	private void addInboundOutboundPortMappingConfiguration(Properties properties) throws MojoExecutionException {
+		File targetFolder = new File(mavenProject.getBuild().getOutputDirectory(), "META-INF");
+		if (!targetFolder.exists()) {
+			targetFolder.mkdir();
+		}
+		try (FileWriter fileWriter = new FileWriter(new File(targetFolder, "dataflow-configuration-port-mapping.properties"))) {
+			for (String propertyKey: properties.stringPropertyNames()) {
+				if (propertyKey.equals(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS)) {
+					fileWriter.write(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS + "=" + properties
+							.getProperty(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS));
+					fileWriter.write(System.lineSeparator());
+				}
+				else if (propertyKey.equals(CONFIGURATION_PROPERTIES_INBOUND_PORTS)) {
+					fileWriter.write(CONFIGURATION_PROPERTIES_INBOUND_PORTS + "=" + properties
+							.getProperty(CONFIGURATION_PROPERTIES_INBOUND_PORTS));
+					fileWriter.write(System.lineSeparator());
+				}
+			}
+		} catch (IOException e) {
+			throw new MojoExecutionException("Error creating file ", e);
+		}
+	}
+
+
 	private String toJson(ConfigurationMetadata metadata) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		jsonMarshaller.write(metadata, baos);
@@ -230,6 +268,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	 */
 	/*default*/ Properties gatherVisibleMetadata() throws MojoExecutionException {
 		Properties visible = new Properties();
+		List<String> inboundPorts = new ArrayList<>();
+		List<String> outboundPorts = new ArrayList<>();
 		try {
 			for (String path : mavenProject.getRuntimeClasspathElements()) {
 				if (Files.isDirectory(Paths.get(path))) {
@@ -246,7 +286,41 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							break;
 						}
 					}
-			} else {
+					File dir = new File(path);
+					for (File file : dir.listFiles()) {
+						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
+								|| file.getName().endsWith(".properties"))) {
+							if (file.canRead()) {
+								Properties properties = new Properties();
+								try (InputStream is = new FileInputStream(file)) {
+									properties.load(is);
+									String functionDefinitions = null;
+									if (properties.containsKey(SPRING_CLOUD_FUNCTION_DEFINITION)) {
+										functionDefinitions = properties.getProperty(SPRING_CLOUD_FUNCTION_DEFINITION);
+									}
+									else if (properties.containsKey(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION)) {
+										functionDefinitions = properties.getProperty(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION);
+									}
+									for (String functionDefinition: StringUtils.delimitedListToStringArray(functionDefinitions, ";")) {
+										if (functionDefinition != null) {
+											for (Object propertyKey : properties.keySet()) {
+												if (((String) propertyKey).startsWith(
+														String.format("%s.%s-in-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS, functionDefinition))) {
+													inboundPorts.add(properties.getProperty((String) propertyKey));
+												}
+												if (((String) propertyKey).startsWith(
+														String.format("%s.%s-out-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS, functionDefinition))) {
+													outboundPorts.add(properties.getProperty((String) propertyKey));
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+			}
+			else {
 					try (ZipFile zipFile = new ZipFile(new File(path))) {
 
 						ZipEntry entry;
@@ -267,7 +341,86 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		} catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
+		if (!inboundPorts.isEmpty()) {
+			visible.put("configuration-properties.inbound-ports", StringUtils.arrayToCommaDelimitedString(inboundPorts.toArray(new String[0])));
+		}
+		if (!outboundPorts.isEmpty()) {
+			visible.put("configuration-properties.outbound-ports", StringUtils.arrayToCommaDelimitedString(outboundPorts.toArray(new String[0])));
+		}
 		return visible;
+	}
+
+
+	String[] gatherInboundPorts() throws MojoExecutionException {
+		List<String> inboundPorts = new ArrayList<>();
+		try {
+			for (String path : mavenProject.getRuntimeClasspathElements()) {
+				if (Files.isDirectory(Paths.get(path))) {
+					File dir = new File(path);
+					for (File file : dir.listFiles()) {
+						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
+								|| file.getName().endsWith(".properties"))) {
+							if (file.canRead()) {
+								Properties properties = new Properties();
+								try (InputStream is = new FileInputStream(file)) {
+									properties.load(is);
+									if (properties.containsKey("spring.cloud.function.definition")) {
+										String functionDefinition = properties
+												.getProperty("spring.cloud.function.definition");
+										for (Object propertyKey : properties.keySet()) {
+											if (((String) propertyKey).startsWith(
+													"spring.cloud.stream.function.bindings." + functionDefinition
+															+ ".in-")) {
+												inboundPorts.add(properties.getProperty((String) propertyKey));
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
+		}
+		return inboundPorts.toArray(new String[0]);
+	}
+
+	String[] gatherOutboundPorts() throws MojoExecutionException {
+		List<String> outboundPorts = new ArrayList<>();
+		try {
+			for (String path : mavenProject.getRuntimeClasspathElements()) {
+				if (Files.isDirectory(Paths.get(path))) {
+					File dir = new File(path);
+					for (File file : dir.listFiles()) {
+						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
+								|| file.getName().endsWith(".properties"))) {
+							if (file.canRead()) {
+								Properties properties = new Properties();
+								try (InputStream is = new FileInputStream(file)) {
+									properties.load(is);
+									if (properties.containsKey("spring.cloud.function.definition")) {
+										String functionDefinition = properties
+												.getProperty("spring.cloud.function.definition");
+										for (Object propertyKey : properties.keySet()) {
+											if (((String) propertyKey).startsWith(
+													"spring.cloud.stream.function.bindings." + functionDefinition
+															+ ".out-")) {
+												outboundPorts.add(properties.getProperty((String) propertyKey));
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
+		}
+		return outboundPorts.toArray(new String[0]);
 	}
 
 
