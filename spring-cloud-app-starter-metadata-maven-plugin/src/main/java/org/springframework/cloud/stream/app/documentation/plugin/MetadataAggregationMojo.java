@@ -53,10 +53,12 @@ import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.MavenProjectHelper;
 
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
 import org.springframework.boot.configurationprocessor.metadata.ConfigurationMetadata;
 import org.springframework.boot.configurationprocessor.metadata.ItemHint;
 import org.springframework.boot.configurationprocessor.metadata.ItemMetadata;
 import org.springframework.boot.configurationprocessor.metadata.JsonMarshaller;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -81,10 +83,15 @@ import static org.springframework.boot.configurationprocessor.metadata.ItemHint.
 public class MetadataAggregationMojo extends AbstractMojo {
 
 	static final String METADATA_PATH = "META-INF/spring-configuration-metadata.json";
+
 	static final String VISIBLE_PROPERTIES_PATH = "META-INF/dataflow-configuration-metadata.properties";
+
 	static final String DEPRECATED_WHITELIST_PATH = "META-INF/dataflow-configuration-metadata-whitelist.properties";
+
 	static final String DEPRECATED_BACKUP_WHITELIST_PATH = "META-INF/spring-configuration-metadata-whitelist.properties";
+
 	static final String CONFIGURATION_PROPERTIES_CLASSES = "configuration-properties.classes";
+
 	static final String CONFIGURATION_PROPERTIES_NAMES = "configuration-properties.names";
 
 	static final String CONFIGURATION_PROPERTIES_INBOUND_PORTS = "configuration-properties.inbound-ports";
@@ -96,6 +103,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	static final String SPRING_CLOUD_STREAM_FUNCTION_DEFINITION = "spring.cloud.stream.function.definition";
 
 	static final String SPRING_CLOUD_STREAM_FUNCTION_BINDINGS = "spring.cloud.stream.function.bindings";
+
+	static final String SPRING_CLOUD_DATAFLOW_PORT_MAPPING_PROPERTIES = "dataflow-configuration-port-mapping.properties";
 
 	@Parameter(defaultValue = "${project}")
 	private MavenProject mavenProject;
@@ -116,6 +125,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 	public static class MetadataFilter {
 		private List<String> names;
+
 		private List<String> sourceTypes;
 
 		public List<String> getNames() {
@@ -190,7 +200,7 @@ public class MetadataAggregationMojo extends AbstractMojo {
 			storeFilteredMetadata();
 		}
 		//Add port mapping configuration based on the application configuration.
-		addInboundOutboundPortMappingConfiguration(result.visible);
+		storeInboutOutboundPortMappingConfigurations(result.visible);
 	}
 
 	/**
@@ -217,23 +227,25 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		if (!targetFolder.exists()) {
 			targetFolder.mkdir();
 		}
-		try (FileWriter fileWriter = new FileWriter(new File(targetFolder, "spring-configuration-metadata-encoded.properties"))) {
+		try (FileWriter fileWriter = new FileWriter(
+				new File(targetFolder, "spring-configuration-metadata-encoded.properties"))) {
 			ConfigurationMetadata metadata = gatherConfigurationMetadata(metadataFilter);
 			String escapedJson = StringEscapeUtils.escapeJson(toJson(metadata));
 			fileWriter.write("org.springframework.cloud.dataflow.spring.configuration.metadata.json=" + escapedJson);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new MojoExecutionException("Error creating file ", e);
 		}
 	}
 
-
-	private void addInboundOutboundPortMappingConfiguration(Properties properties) throws MojoExecutionException {
+	private void storeInboutOutboundPortMappingConfigurations(Properties properties) throws MojoExecutionException {
 		File targetFolder = new File(mavenProject.getBuild().getOutputDirectory(), "META-INF");
 		if (!targetFolder.exists()) {
 			targetFolder.mkdir();
 		}
-		try (FileWriter fileWriter = new FileWriter(new File(targetFolder, "dataflow-configuration-port-mapping.properties"))) {
-			for (String propertyKey: properties.stringPropertyNames()) {
+		try (FileWriter fileWriter = new FileWriter(
+				new File(targetFolder, SPRING_CLOUD_DATAFLOW_PORT_MAPPING_PROPERTIES))) {
+			for (String propertyKey : properties.stringPropertyNames()) {
 				if (propertyKey.equals(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS)) {
 					fileWriter.write(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS + "=" + properties
 							.getProperty(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS));
@@ -245,11 +257,11 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					fileWriter.write(System.lineSeparator());
 				}
 			}
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new MojoExecutionException("Error creating file ", e);
 		}
 	}
-
 
 	private String toJson(ConfigurationMetadata metadata) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -273,7 +285,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		try {
 			for (String path : mavenProject.getRuntimeClasspathElements()) {
 				if (Files.isDirectory(Paths.get(path))) {
-					for (String visibleProperties: new String[]{VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH, DEPRECATED_BACKUP_WHITELIST_PATH}) {
+					for (String visibleProperties : new String[] { VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH,
+							DEPRECATED_BACKUP_WHITELIST_PATH }) {
 						Optional<Properties> properties;
 						properties = getVisibleFromFile(Paths.get(path, visibleProperties));
 						if (properties.isPresent()) {
@@ -288,43 +301,52 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					}
 					File dir = new File(path);
 					for (File file : dir.listFiles()) {
-						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
-								|| file.getName().endsWith(".properties"))) {
-							if (file.canRead()) {
-								Properties properties = new Properties();
-								try (InputStream is = new FileInputStream(file)) {
-									properties.load(is);
-									String functionDefinitions = null;
-									if (properties.containsKey(SPRING_CLOUD_FUNCTION_DEFINITION)) {
-										functionDefinitions = properties.getProperty(SPRING_CLOUD_FUNCTION_DEFINITION);
-									}
-									else if (properties.containsKey(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION)) {
-										functionDefinitions = properties.getProperty(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION);
-									}
-									for (String functionDefinition: StringUtils.delimitedListToStringArray(functionDefinitions, ";")) {
-										if (functionDefinition != null) {
-											for (Object propertyKey : properties.keySet()) {
-												if (((String) propertyKey).startsWith(
-														String.format("%s.%s-in-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS, functionDefinition))) {
-													inboundPorts.add(properties.getProperty((String) propertyKey));
-												}
-												if (((String) propertyKey).startsWith(
-														String.format("%s.%s-out-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS, functionDefinition))) {
-													outboundPorts.add(properties.getProperty((String) propertyKey));
-												}
-											}
+						Properties properties = new Properties();
+						if (file.isFile() && file.canRead() && file.getName().endsWith(".properties")) {
+							try (InputStream is = new FileInputStream(file)) {
+								properties.load(is);
+							}
+						}
+						if (file.isFile() && file.canRead() && (file.getName().endsWith(".yaml") || file.getName()
+								.endsWith(".yml"))) {
+							YamlPropertiesFactoryBean yamlPropertiesFactoryBean = new YamlPropertiesFactoryBean();
+							yamlPropertiesFactoryBean.setResources(new FileSystemResource(file));
+							properties = yamlPropertiesFactoryBean.getObject();
+						}
+						if (!properties.isEmpty()) {
+							String functionDefinitions = null;
+							if (properties.containsKey(SPRING_CLOUD_FUNCTION_DEFINITION)) {
+								functionDefinitions = properties.getProperty(SPRING_CLOUD_FUNCTION_DEFINITION);
+							}
+							else if (properties.containsKey(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION)) {
+								functionDefinitions = properties
+										.getProperty(SPRING_CLOUD_STREAM_FUNCTION_DEFINITION);
+							}
+							for (String functionDefinition : StringUtils
+									.delimitedListToStringArray(functionDefinitions, ";")) {
+								if (functionDefinition != null) {
+									for (Object propertyKey : properties.keySet()) {
+										if (((String) propertyKey).startsWith(
+												String.format("%s.%s-in-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS,
+														functionDefinition))) {
+											inboundPorts.add(properties.getProperty((String) propertyKey));
+										}
+										if (((String) propertyKey).startsWith(
+												String.format("%s.%s-out-", SPRING_CLOUD_STREAM_FUNCTION_BINDINGS,
+														functionDefinition))) {
+											outboundPorts.add(properties.getProperty((String) propertyKey));
 										}
 									}
 								}
 							}
 						}
 					}
-			}
-			else {
+				}
+				else {
 					try (ZipFile zipFile = new ZipFile(new File(path))) {
-
 						ZipEntry entry;
-						for (String zipEntry: new String[]{VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH, DEPRECATED_BACKUP_WHITELIST_PATH}) {
+						for (String zipEntry : new String[] { VISIBLE_PROPERTIES_PATH, DEPRECATED_WHITELIST_PATH,
+								DEPRECATED_BACKUP_WHITELIST_PATH }) {
 							entry = zipFile.getEntry(zipEntry);
 							if (entry != null) {
 								if (!zipEntry.equals(VISIBLE_PROPERTIES_PATH)) {
@@ -338,93 +360,23 @@ public class MetadataAggregationMojo extends AbstractMojo {
 					}
 				}
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
 		if (!inboundPorts.isEmpty()) {
-			visible.put("configuration-properties.inbound-ports", StringUtils.arrayToCommaDelimitedString(inboundPorts.toArray(new String[0])));
+			visible.put(CONFIGURATION_PROPERTIES_INBOUND_PORTS,
+					StringUtils.arrayToCommaDelimitedString(inboundPorts.toArray(new String[0])));
 		}
 		if (!outboundPorts.isEmpty()) {
-			visible.put("configuration-properties.outbound-ports", StringUtils.arrayToCommaDelimitedString(outboundPorts.toArray(new String[0])));
+			visible.put(CONFIGURATION_PROPERTIES_OUTBOUND_PORTS,
+					StringUtils.arrayToCommaDelimitedString(outboundPorts.toArray(new String[0])));
 		}
 		return visible;
 	}
 
-
-	String[] gatherInboundPorts() throws MojoExecutionException {
-		List<String> inboundPorts = new ArrayList<>();
-		try {
-			for (String path : mavenProject.getRuntimeClasspathElements()) {
-				if (Files.isDirectory(Paths.get(path))) {
-					File dir = new File(path);
-					for (File file : dir.listFiles()) {
-						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
-								|| file.getName().endsWith(".properties"))) {
-							if (file.canRead()) {
-								Properties properties = new Properties();
-								try (InputStream is = new FileInputStream(file)) {
-									properties.load(is);
-									if (properties.containsKey("spring.cloud.function.definition")) {
-										String functionDefinition = properties
-												.getProperty("spring.cloud.function.definition");
-										for (Object propertyKey : properties.keySet()) {
-											if (((String) propertyKey).startsWith(
-													"spring.cloud.stream.function.bindings." + functionDefinition
-															+ ".in-")) {
-												inboundPorts.add(properties.getProperty((String) propertyKey));
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
-		}
-		return inboundPorts.toArray(new String[0]);
-	}
-
-	String[] gatherOutboundPorts() throws MojoExecutionException {
-		List<String> outboundPorts = new ArrayList<>();
-		try {
-			for (String path : mavenProject.getRuntimeClasspathElements()) {
-				if (Files.isDirectory(Paths.get(path))) {
-					File dir = new File(path);
-					for (File file : dir.listFiles()) {
-						if (file.isFile() && (file.getName().endsWith(".yaml") || file.getName().endsWith(".yml")
-								|| file.getName().endsWith(".properties"))) {
-							if (file.canRead()) {
-								Properties properties = new Properties();
-								try (InputStream is = new FileInputStream(file)) {
-									properties.load(is);
-									if (properties.containsKey("spring.cloud.function.definition")) {
-										String functionDefinition = properties
-												.getProperty("spring.cloud.function.definition");
-										for (Object propertyKey : properties.keySet()) {
-											if (((String) propertyKey).startsWith(
-													"spring.cloud.stream.function.bindings." + functionDefinition
-															+ ".out-")) {
-												outboundPorts.add(properties.getProperty((String) propertyKey));
-											}
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		} catch (Exception e) {
-			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
-		}
-		return outboundPorts.toArray(new String[0]);
-	}
-
-
-	/*default*/ ConfigurationMetadata gatherConfigurationMetadata(MetadataFilter metadataFilters) throws MojoExecutionException {
+	/*default*/ ConfigurationMetadata gatherConfigurationMetadata(MetadataFilter metadataFilters)
+			throws MojoExecutionException {
 		ConfigurationMetadata metadata = new ConfigurationMetadata();
 		try {
 			for (String path : mavenProject.getRuntimeClasspathElements()) {
@@ -440,7 +392,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 							metadata.merge(depMetadata);
 						}
 					}
-				} else {
+				}
+				else {
 					try (ZipFile zipFile = new ZipFile(file)) {
 						ZipEntry entry = zipFile.getEntry(METADATA_PATH);
 						if (entry != null) {
@@ -457,12 +410,14 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 				// Replace all escaped double quotes by a single one.
 				metadata.getItems().stream().forEach(itemMetadata -> {
-					if (!StringUtils.isEmpty(itemMetadata.getDescription()) && itemMetadata.getDescription().contains("\"")) {
+					if (!StringUtils.isEmpty(itemMetadata.getDescription()) && itemMetadata.getDescription()
+							.contains("\"")) {
 						itemMetadata.setDescription(itemMetadata.getDescription().replaceAll("\"", "'"));
 					}
 				});
 			}
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			throw new MojoExecutionException("Exception trying to read metadata from dependencies of project", e);
 		}
 		return metadata;
@@ -471,7 +426,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	@SuppressWarnings("unchecked")
 	private ConfigurationMetadata filterMetadata(ConfigurationMetadata metadata, MetadataFilter metadataFilters) {
 		if (metadataFilters == null
-				|| (CollectionUtils.isEmpty(metadataFilters.getNames()) && CollectionUtils.isEmpty(metadataFilters.getSourceTypes()))) {
+				|| (CollectionUtils.isEmpty(metadataFilters.getNames()) && CollectionUtils
+				.isEmpty(metadataFilters.getSourceTypes()))) {
 			return metadata; // nothing to filter by so take all;
 		}
 
@@ -507,7 +463,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		return filteredMetadata;
 	}
 
-	private Properties getVisibleFromZipFile(Properties visible, String path, ZipFile zipFile, ZipEntry entry) throws IOException {
+	private Properties getVisibleFromZipFile(Properties visible, String path, ZipFile zipFile, ZipEntry entry)
+			throws IOException {
 		try (InputStream inputStream = zipFile.getInputStream(entry)) {
 			getLog().debug("Merging visible metadata from " + path);
 			visible = merge(visible, inputStream);
@@ -532,9 +489,10 @@ public class MetadataAggregationMojo extends AbstractMojo {
 		Properties mergedProperties = new Properties();
 		mergedProperties.load(is);
 
-		if (!mergedProperties.containsKey(CONFIGURATION_PROPERTIES_CLASSES) && !mergedProperties.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
+		if (!mergedProperties.containsKey(CONFIGURATION_PROPERTIES_CLASSES) && !mergedProperties
+				.containsKey(CONFIGURATION_PROPERTIES_NAMES)) {
 			getLog().warn(String.format("Visible properties does not contain any required keys: %s",
-					StringUtils.arrayToCommaDelimitedString(new String[]{
+					StringUtils.arrayToCommaDelimitedString(new String[] {
 							CONFIGURATION_PROPERTIES_CLASSES,
 							CONFIGURATION_PROPERTIES_NAMES
 					})));
@@ -565,7 +523,8 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	 * Create a jar file with the given metadata and "attach" it to the current maven project.
 	 */
 	/*default*/ void produceArtifact(Result result) throws MojoExecutionException {
-		String artifactLocation = String.format("target/%s-%s-%s.jar", mavenProject.getArtifactId(), mavenProject.getVersion(), classifier);
+		String artifactLocation = String
+				.format("target/%s-%s-%s.jar", mavenProject.getArtifactId(), mavenProject.getVersion(), classifier);
 		File output = new File(mavenProject.getBasedir(), artifactLocation);
 		try (JarOutputStream jos = new JarOutputStream(new FileOutputStream(output))) {
 			ZipEntry entry = new ZipEntry(METADATA_PATH);
@@ -586,11 +545,11 @@ public class MetadataAggregationMojo extends AbstractMojo {
 
 			getLog().info(String.format("Attaching %s to current project", output.getCanonicalPath()));
 			projectHelper.attachArtifact(mavenProject, output, classifier);
-		} catch (IOException e) {
+		}
+		catch (IOException e) {
 			throw new MojoExecutionException("Error writing to file", e);
 		}
 	}
-
 
 	void addEnumHints(ConfigurationMetadata configurationMetadata, ClassLoader classLoader) {
 
@@ -643,9 +602,10 @@ public class MetadataAggregationMojo extends AbstractMojo {
 	private ClassLoader getClassLoader(String jarPath) {
 		ClassLoader classLoader = null;
 		try {
-			classLoader = new URLClassLoader(new URL[]{new URL("file://" + jarPath)},
+			classLoader = new URLClassLoader(new URL[] { new URL("file://" + jarPath) },
 					this.getClass().getClassLoader());
-		} catch (MalformedURLException e) {
+		}
+		catch (MalformedURLException e) {
 			// pass through
 		}
 		return classLoader;
