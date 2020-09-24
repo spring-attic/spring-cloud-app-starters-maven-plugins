@@ -159,6 +159,9 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 	@Parameter(defaultValue = "false")
 	private boolean enableContainerImageMetadata;
 
+	@Parameter
+	List<org.apache.maven.model.Dependency> overrideParentDependencies = new ArrayList<>();
+
 	private ScsProjectGenerator projectGenerator = new ScsProjectGenerator();
 
 	public void execute() throws MojoExecutionException, MojoFailureException {
@@ -171,6 +174,10 @@ public class SpringCloudStreamAppMojo extends AbstractMojo {
 		}
 		else {
 			projectGenerator.setDockerHubOrg(dockerHubOrg);
+		}
+
+		if (!overrideParentDependencies.isEmpty()) {
+			projectGenerator.setOverrideParentDependencies(overrideParentDependencies);
 		}
 
 		if (!entrypointType.equals(ENTRYPOINT_TYPE_EXEC)

@@ -67,6 +67,8 @@ public class ScsProjectGenerator extends ProjectGenerator {
 
 	private boolean enableContainerImageMetadata;
 
+	List<org.apache.maven.model.Dependency> overrideParentDependencies = new ArrayList<>();
+
 	@Override
 	protected File doGenerateProjectStructure(ProjectRequest request) {
 		return doGenerateProjectStructure(request, MavenModelUtils.ENTRYPOINT_TYPE_EXEC);
@@ -156,6 +158,11 @@ public class ScsProjectGenerator extends ProjectGenerator {
 			MavenModelUtils.addDistributionManagement(pomModel);
 			MavenModelUtils.addProfiles(pomModel);
 			MavenModelUtils.addProperties(pomModel, properties);
+
+			for (org.apache.maven.model.Dependency dependency : this.overrideParentDependencies) {
+				pomModel.addDependency(dependency);
+			}
+
 			MavenModelUtils.writeModelToFile(pomModel, os2);
 
 			is.close();
@@ -219,5 +226,9 @@ public class ScsProjectGenerator extends ProjectGenerator {
 
 	public void setEnableContainerImageMetadata(boolean enableContainerImageMetadata) {
 		this.enableContainerImageMetadata = enableContainerImageMetadata;
+	}
+
+	public void setOverrideParentDependencies(List<org.apache.maven.model.Dependency> overrideParentDependencies) {
+		this.overrideParentDependencies = overrideParentDependencies;
 	}
 }
