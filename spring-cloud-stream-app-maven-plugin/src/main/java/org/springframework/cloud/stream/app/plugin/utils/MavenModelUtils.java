@@ -240,6 +240,8 @@ public class MavenModelUtils {
 			final Xpp3Dom labels = SpringCloudStreamPluginUtils.addElement(build, "labels");
 			SpringCloudStreamPluginUtils.addElement(labels, "org.springframework.cloud.dataflow.spring-configuration-metadata.json",
 					"${org.springframework.cloud.dataflow.spring.configuration.metadata.json}");
+			SpringCloudStreamPluginUtils.addElement(labels, "application.name", "${project.artifactId}");
+			SpringCloudStreamPluginUtils.addElement(labels, "application.version", "${project.version}");
 		}
 
 		final Xpp3Dom entryPoint = new Xpp3Dom("entryPoint");
