@@ -1,3 +1,5 @@
+# spring-cloud-app-starters-maven-plugins is no longer actively maintained by VMware, Inc.
+
 = Spring Cloud Stream, Task & Data Flow Maven Plugins
 
 This repository contains several maven plugins related to the Spring Cloud Data Flow portfolio of projects.
